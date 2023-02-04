@@ -46,6 +46,9 @@ conda activate vocal-forge
 git clone https://github.com/rioharper/VocalForge
 cd VocalForge
 pip install -r requirements.txt
+
+#enter huggingface token, token can be found at https://huggingface.co/settings/tokens
+huggingface-cli login
 ```
 
 
