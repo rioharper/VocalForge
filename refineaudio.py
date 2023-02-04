@@ -1,6 +1,21 @@
 import os
-def download_videos(playlist_url):
-    playlist_url = "https://www.youtube.com/playlist?list=" + playlist_url.split("=")[1]
+from pydub import AudioSegment
+
+def download_videos(playlist_url: str):
+    
+    '''This function downloads videos from a YouTube playlist URL using the 
+       "yt_dlp" library and saves them in the .wav format. 
+
+        Inputs:
+        - playlist_url: a string representing the URL of the YouTube playlist
+        
+        Outputs:
+        - None, but audio files are saved to disk in the .wav format.
+        
+        Dependencies:
+        - "yt_dlp" library
+        - "os" library'''
+
     import yt_dlp
     
     ydl_opts = {
@@ -21,13 +36,70 @@ def download_videos(playlist_url):
             dst =f"{rawdir}/{dst}"
             os.rename(src, dst)
 
+
+def split_files(folder: str, dir: str):
+    '''This function splits audio files in the .wav format located in the
+       specified folder and saves the clips in the same folder. 
+
+        Inputs:
+        - folder: a string representing the name of the folder containing the audio files.
+        - dir: a string representing the directory path containing the folder.
+        
+        Outputs:
+        - None, but audio clips are saved to disk in the .wav format.
+        
+        Dependencies:
+        - "os" library
+        - "pydub" library and its component "AudioSegment"'''
+        
+    folder_dir = os.path.join(dir, folder)
+    for file in get_files(folder_dir):
+        file_dir = os.path.join(dir, folder_dir, file)
+        print(file_dir)
+        raw = AudioSegment.from_file(file_dir, format="wav")
+        raw = raw[::60000]
+        for index, clip in raw:
+            
+            clip_dir = os.path.join(folder_dir, file.split(".")[0], file.split(".")[0]+str(index)+".wav")
+            clip = clip.export(clip_dir, format="wav")
+
+
 def get_length(list):
+    """
+    This function calculates the total duration of a list of time intervals.
+
+    Parameters:
+        list (list): A list of time intervals, represented as tuples of start and end times.
+
+    Returns:
+        duration (int): The total duration of the time intervals in seconds.
+
+    Example:
+        get_length([(0, 30), (40, 50), (60, 70)])
+        Returns:
+        60
+    """
     duration = 0
     for timestamps in list:
         duration += timestamps[1]-timestamps[0]
     return duration
 
-def get_files(dir, ext=None):
+
+def get_files(dir:str, ext=None) -> list:
+    '''This function returns a list of files in a specified directory with a specified file extension. 
+
+    Inputs:
+    - dir: a string representing the directory path containing the files.
+    - ext (optional): a string representing the file extension to filter the files. 
+      If not specified, all files will be returned.
+    
+    Outputs:
+    - A list of sorted filenames.
+    
+    Dependencies:
+    - "os" library
+    - "natsort" library'''
+
     import natsort
     files = []
     for file in os.listdir(dir):
@@ -38,18 +110,44 @@ def get_files(dir, ext=None):
     files = natsort.natsorted(files)
     return files
 
+
 def get_raw_dir():
     return rawdir
 
+
 def create_core_folders():
-    folders = ['Isolated', 'No_Overlap', 'Removed_Emotion', 'Samples', "Only_Voice", "Verification", "Exported"]
+    '''This function creates a set of core folders in a specified working directory. 
+
+        Inputs:
+        - None, but the working directory path should be specified globally.
+        
+        Outputs:
+        - None, but a set of folders is created in the working directory if they do not already exist.
+        
+        Dependencies:
+        - "os" library'''
+
+    folders = ['Isolated', 'No_Overlap', 'Removed_Emotion', 'Samples', "Only_Voice", "Verification", "Exported", 'Noise_Removed']
     for folder in folders:
         folderdir = os.path.join(workdir, folder)
         if os.path.exists(folderdir) == False:
             os.makedirs(folderdir)
 
-def create_samples(length):
-    from pydub import AudioSegment
+
+def create_samples(length:int):    
+    '''This function creates audio samples of a specified length from audio files
+       in the .wav format located in a specified raw directory.
+
+        Inputs:
+        - length: an integer representing the length in seconds of the samples to be created.
+        
+        Outputs:
+        - None, but audio samples are saved to disk in the .wav format.
+        
+        Dependencies:
+        - "os" library
+        - "pydub" library and its component "AudioSegment"'''
+
     samples_dir = os.path.join(workdir, "Samples")
     rawfiles = get_files(rawdir, ".wav")
     for file in rawfiles:
@@ -59,7 +157,21 @@ def create_samples(length):
         nfilename =  os.path.join(samples_dir, file)
         entry.export(nfilename, format="wav")
 
-def concentrate_timestamps(list):
+
+def concentrate_timestamps(list:list) -> list:
+    '''This function takes in a list of timestamps and returns a condensed list of
+       timestamps where timestamps are merged that are close to eachother.
+
+        Inputs:
+        - list: a list of timestamp tuples or a list of single timestamps.
+        
+        Outputs:
+        - A list of condensed timestamps where timestamps that are within
+          2000 ms of eachother have been merged into a single entry.
+        
+        Dependencies:
+        - None'''
+
     try:
         destination = [list[0]] # start with one period already in the output
     except: return list
@@ -75,7 +187,18 @@ def concentrate_timestamps(list):
             destination.append(src)
     return destination
 
+
 def remove_short_timestamps(list):
+    """
+    Removes timestamps that are too short from a list of timestamps.
+
+    Parameters:
+    list (list): List of timestamps. Each timestamp is a list containing
+                 the start and end time of a period.
+
+    Returns:
+    list: List of timestamps with short timestamps removed.
+    """
     nlist = []
     for stamps in list:
             if stamps[1] - stamps[0] > 1:
@@ -83,7 +206,8 @@ def remove_short_timestamps(list):
     return nlist
 
 
-def remove_nonspeech(vad_threshold, noise_agressiveness):
+
+def remove_nonspeech(vad_threshold: float, noise_agressiveness: float):
     rawdir = get_raw_dir()
     if len(os.listdir(os.path.join(workdir, "Samples"))) > 0:
         rawdir = os.path.join(workdir, "Samples")
@@ -94,7 +218,17 @@ def remove_nonspeech(vad_threshold, noise_agressiveness):
         print("speech file(s) already found! Skipping...")
         return
 
+
     def analyze_vad():
+        """
+        This function analyzes audio files in a folder and performs voice activity detection (VAD)
+        on the audio files. It uses the 'pyannote.audio' library's pre-trained 'brouhaha' model for the analysis.
+
+        Parameters:
+            rawdir (dir): predefined globally
+        Returns:
+            speech_metrics (list): List of voice activity detection output for each audio file.
+        """
         from pyannote.audio import Inference
         from pyannote.audio import Model
         model = Model.from_pretrained("pyannote/brouhaha", 
@@ -109,18 +243,31 @@ def remove_nonspeech(vad_threshold, noise_agressiveness):
         return speech_metrics
     
 
-    def find_timestamps(speech_metrics):
+    def find_timestamps(speech_metrics: list) -> list:
+        """
+        This function processes speech metrics and returns timestamps
+        of speech segments in the audio.
+        
+        Parameters:
+        speech_metrics (list): list of speech metrics for each audio file
+        
+        Returns:
+        timestamps (list): list of speech timestamps for each audio file
+        """
         import statistics
+        
         timestamps = []
         for fileindex, file in enumerate(raw_files):
             nonspeech_timestamps = []
             startpoint = False
-            c50_all=[]
+            c50_all = []
             first_iter = True
-
+            
+            # Calculate median of c50 values for the current audio file
             for frame, (c50) in speech_metrics[fileindex]:
                 c50_all.append(c50[2])
             c50_med = float(statistics.median_high(c50_all))
+            
             for frame, (vad, snr, c50) in speech_metrics[fileindex]:
                 vad = vad *100
                 t = frame.middle
@@ -138,29 +285,52 @@ def remove_nonspeech(vad_threshold, noise_agressiveness):
                     startpoint = False
             if len(nonspeech_timestamps[len(nonspeech_timestamps)-1]) == 1:
                 nonspeech_timestamps.pop(len(nonspeech_timestamps)-1)
-
-
+            
+            # Get speech timestamps by concatenating non-speech timestamps
             speech_timestamps = []
             for index, stamps in enumerate(nonspeech_timestamps):
                 try:
+                    #if length between VAD timestamps is less than 4 seconds, combine them
                     if nonspeech_timestamps[index+1][0] - stamps[1] > 4:
                         stamplist = [stamps[1], nonspeech_timestamps[index+1][0]]
                         speech_timestamps.append(stamplist)
                 except: pass
             speech_timestamps = concentrate_timestamps(speech_timestamps)
             timestamps.append(speech_timestamps)
+        
         return timestamps
 
-    def export_voices(timestamps):
-        from pydub import AudioSegment
+
+    def export_voices(timestamps: list):
+        """
+        Given a list of timestamps for each file, the function exports 
+        the speech segments from each raw file to a new file format wav. 
+        The new files are saved to a specified directory. 
+
+        Parameters: 
+        timestamps (list): A list of timestamps for each file indicating 
+        the start and end of speech segments.
+
+        Returns: 
+        None
+        """
         for index, file in enumerate(raw_files):
+            # Load raw audio file
             raw = AudioSegment.from_file(f"{rawdir}/{file}", format="wav")
             entry = AudioSegment.empty()
+            # Add speech segments to the new audio file
             for stamps in timestamps[index]:
                 entry += raw[stamps[0]*1000:stamps[1]*1000]
-            try: entry+=raw[timestamps[index][len(timestamps[index])-1][1]]
-            except: pass
-            fentry = entry.export(f"{speech_dir}/{file}", format='wav')
+            try:
+                entry += raw[timestamps[index][len(timestamps[index])-1][1]]
+            except:
+                pass
+            # Check if the new audio file has enough speech segments
+            if len(entry) > 1000:
+                # Save the new audio file to the specified directory
+                fentry = entry.export(f"{speech_dir}/{file}", format='wav')
+            else:
+                print(f"{file} doesnt have enough clean audio to export")
 
     speech_metrics = analyze_vad()
     timestamps = find_timestamps(speech_metrics)
@@ -177,20 +347,47 @@ def remove_overlap():
         print("overlap file(s) already found! Skipping...")
         return
 
-    def analyze_overlap():
+
+    def analyze_overlap() -> list:
+        """
+        Analyzes overlapping speech in a set of speech audio files.
         
+        Returns:
+            overlap_timeline (list): A list of overlapping speech timestamps 
+                                    for each file.
+        """
         from pyannote.audio import Pipeline
+        
+        # Create a pipeline object using the pre-trained "pyannote/overlapped-speech-detection"
         pipeline = Pipeline.from_pretrained("pyannote/overlapped-speech-detection",
                                             use_auth_token=True)
-
         overlap_timeline = []
+        
+        # Loop through each speech file in the speech_files list
         for file in speech_files:
-            dia = pipeline(os.path.join(speech_dir, file))
+            try:
+                # Use the pipeline to analyze the file for overlapping speech
+                dia = pipeline(os.path.join(speech_dir, file))
+            except:
+                # If the pipeline fails to analyze the file, print an error message
+                print(f"{file} seems to have no data in it!")
             overlap_timeline.append(dia)
             print(f"Analyzed {file} for overlap")
+        
+        # Return the overlapping speech timeline
         return overlap_timeline
 
-    def overlap_timestamps(overlap):
+
+    def overlap_timestamps(overlap: list) -> list:
+        """
+        Converts overlap timelines into timestamps of non-overlapping speech turns
+
+        Parameters:
+            overlap (list): List of overlap timelines obtained from analyze_overlap function
+
+        Returns:
+            overlap_timestamps (list): List of timestamps of non-overlapping speech turns
+        """
         overlap_timestamps = []
         for i in range(len(overlap)):
             timestamps = []
@@ -201,27 +398,39 @@ def remove_overlap():
             overlap_timestamps.append(timestamps)
         return overlap_timestamps
     
-    def export_no_overlap(all_timestamps):
-        from pydub import AudioSegment
+
+    def export_no_overlap(all_timestamps: list):
+        """
+        Exports the audio files with overlapped speech removed.
+        
+        Parameters:
+        all_timestamps (list): List of timestamps of overlapped speech
+                                                for each audio file.
+        
+        Returns:
+        None
+        """
         for index, file in enumerate(speech_files):
             raw_data = AudioSegment.from_file(os.path.join(speech_dir, file), format="wav")
             entry = AudioSegment.empty()
-
+            
             try:
                 entry+=raw_data[:all_timestamps[index][0][0]*1000]
-            except: entry+=raw_data
-
+            except:
+                entry+=raw_data
+            
             for timestampindex, timestamps in enumerate(all_timestamps[index]):
                 if len(timestamps) == 1:
-                    print([all_timestamps[index][0][0], all_timestamps[index][0][1]])
                     entry += raw_data[:all_timestamps[index][0][0]*1000]
                     entry += raw_data[all_timestamps[index][0][1]*1000:]
                 else:
                     entry += raw_data[all_timestamps[index][timestampindex][0]*1000:all_timestamps[index][timestampindex-1][1]*1000]
             try:
                 entry+=raw_data[all_timestamps[index][len(all_timestamps[index])-1][1]*1000:]
-            except: pass
+            except:
+                pass
             nentry = entry.export(f"{overlap_dir}/{file}", format='wav')
+
 
     overlaps = analyze_overlap()
     timestamps = overlap_timestamps(overlaps)
@@ -229,7 +438,11 @@ def remove_overlap():
     print("exported non overlapped files!")
 
 
+
 def isolate_speaker(verification_threshold):
+    """Isolates speakers in file, then finds target speaker across all the files
+        Output: Verification and Isolated folders
+    """
     overlap_dir = os.path.join(workdir, "No_Overlap")
     speaker_dir = os.path.join(workdir, "Verification")
     isolated_dir = os.path.join(workdir, "Isolated")
@@ -244,54 +457,124 @@ def isolate_speaker(verification_threshold):
 
     import shutil
 
-    def find_speakers(files):
+
+    def find_speakers(files: list) -> list:
+        """
+        Finds the different speakers from the audio files in `overlap_dir` and
+        returns a list of `SpeakerDiarization` instances.
+
+        Parameters:
+        -----------
+        files: list of strings
+            List of audio file names in `overlap_dir`
+            
+        Returns:
+        --------
+        speakers: list of SpeakerDiarization
+            List of `SpeakerDiarization` instances, one for each audio file in `files`
+        """
+
         from pyannote.audio import Pipeline
-        pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@develop", use_auth_token=True)
+        pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@develop",
+                                            use_auth_token=True)
         speakers = []
         for file in files:
             dia = pipeline(os.path.join(overlap_dir, file))
             speakers.append(dia)
             print(f"Seperated speakers for {file}")
         return speakers
+
     
-    def find_number_speakers(track, index):
+    def find_number_speakers(track, index: int) -> list:
+        """
+        Find the number of speakers in a given track of a audio file.
+
+        Parameters:
+        track (pyannote.core.Annotation): PyAnnote annotation object representing a speaker track.
+        index (int): Index of the current audio file being processed.
+
+        Returns:
+        List[str]: A list of unique speaker names in the given track.
+        """
+
         speakers = []
         for speech_turn, track, speaker in track.itertracks(yield_label=True):
             if speaker not in speakers:
                 speakers.append(speaker)
         print(f"File {overlap_files[index]} has {len(speakers)} speaker(s)")
         return speakers
+
     
-    def find_speakers_timestamps(file, speakers):
+    def find_speakers_timestamps(file: tuple, speakers: list):
+        """
+        This function receives a file with speech segments and speakers
+        labels and returns a list of speech timestamps for each speaker.
+
+        Parameters:
+        file: pyannote.core.Annotation - file containing speech segments and speakers
+        speakers: list - list of speakers in the file
+
+        Returns:
+        list: list of speech timestamps for each speaker
+
+        """
         timestamps = [ [] for i in range(len(speakers)) ]
         for speech_turn, track, speaker in file.itertracks(yield_label=True):
             speaker = speaker.split("_")[1]
             speaker = int(speaker)
-            #print(f"Speaker {speaker} has spoken between {speech_turn.start} and {speech_turn.end}")
             timestamps[speaker].append([speech_turn.start, speech_turn.end])
+
         for index, speaker in enumerate(timestamps):
             timestamps[index] = remove_short_timestamps(speaker)
+
         return timestamps
+
             
-    def seperate_speakers(speakers):
+    def seperate_speakers(speakers: list) -> None:
+        """
+        Given a list of speakers' tracks, this function separates individual 
+        speakers and saves their speech parts to a directory.
+
+        Parameters:
+        speakers (list): list of tracks of multiple speakers
+        
+        Returns:
+        None
+        """
         from pydub import AudioSegment
+        import os
+
         for fileindex, tracks in enumerate(speakers, -1):
             speakers = find_number_speakers(tracks, fileindex)
             speaker_timestamps = find_speakers_timestamps(tracks, speakers)
             for index, timestamps in enumerate(speaker_timestamps):
-                raw_data = AudioSegment.from_file(os.path.join(overlap_dir, overlap_files[fileindex]), format="wav")
+                raw_data = AudioSegment.from_file(os.path.join(overlap_dir,
+                                                                overlap_files[fileindex]),
+                                                                format="wav")
                 entry = AudioSegment.empty()
                 for start, stop in timestamps:
-                    entry += raw_data[start*1000:stop*1000]
+                    entry += raw_data[start * 1000: stop * 1000]
                 foldername = overlap_files[fileindex].split(".")[0]
                 dir = os.path.join(speaker_dir, foldername)
                 if os.path.exists(dir) == False:
                     os.mkdir(dir)
-                #print(f"{speakers[index]} has been seperated from {overlap_files[fileindex]}")
-                fentry = entry.export(os.path.join(speaker_dir, foldername, speakers[index]+".wav"), format="wav")
+                fentry = entry.export(os.path.join(speaker_dir, foldername,
+                                                    speakers[index]+".wav"),
+                                                    format="wav")
 
 
-    def inference_folder(dir, target_speaker):
+    def inference_folder(dir: str, target_speaker) -> list:
+        """
+        Infer the speaker of the audio files in a directory and verify the identity against a target speaker.
+
+        Parameters:
+        dir (str): The directory containing the audio files to be inferred.
+        target_speaker (numpy.ndarray): The target speaker's embedding to verify against.
+
+        Returns:
+        List[str]: List of verified audio files in the directory.
+
+        """
         from scipy import spatial
         folder_dir = os.path.join(speaker_dir, dir)
         verfified = []
@@ -301,8 +584,10 @@ def isolate_speaker(verification_threshold):
                 distance = 1 - spatial.distance.cosine(speakeremb, target_speaker)
                 if distance > verification_threshold:
                     verfified.append(file)
-            except: pass
+            except: 
+                pass
         return verfified
+
 
     def verify_folder(target_speaker):
         folders =  get_files(speaker_dir)
@@ -312,6 +597,7 @@ def isolate_speaker(verification_threshold):
             verfified = inference_folder(folder, target_speaker)
             verified_files.append(verfified)
         return verified_files
+
 
     def transfer_to_isolated(verified_files):
         folders =  get_files(speaker_dir)
@@ -341,6 +627,13 @@ def isolate_speaker(verification_threshold):
     else: print("Speaker has already been verified! Skipping...")
 
 
+
+"""
+Not currently in use due to poor performance
+TODO:
+    Replace Pitch with either multiple factors (pitch, db, offset, etc) OR
+    Create a model to detect the emotional state of speech
+"""
 def remove_emotion(emotional_threshold):
     import crepe
     from scipy.io import wavfile
@@ -351,6 +644,7 @@ def remove_emotion(emotional_threshold):
     isolated_folders = get_files(isolated_dir)
     
     def determine_emotional_state(times, frequencies):
+        print('determine')
         medianfreq = statistics.median_grouped(frequencies)
         stdevfreq = statistics.stdev(frequencies) * emotional_threshold
 
@@ -368,7 +662,8 @@ def remove_emotion(emotional_threshold):
         return rawtimestamps
     
     def remove_emotional_speech(timestamps, folder_dir, file):
-        from pydub import AudioSegment
+        print('timestamps')
+        
         file_dir = os.path.join(isolated_dir, folder_dir, file)
         raw = AudioSegment.from_file(file_dir, format="wav")
         entry = AudioSegment.empty()
@@ -378,6 +673,7 @@ def remove_emotion(emotional_threshold):
         fentry = entry.export(os.path.join(woemotion_dir, folder_dir, file), format='wav')
 
     def analyze_emotion_folder(folder_name):
+        print('emotion folder')
         os.mkdir(os.path.join(woemotion_dir, folder_name))
         folder_dir = (os.path.join(isolated_dir, folder_name))
         folder = get_files(folder_dir)
@@ -397,48 +693,131 @@ def remove_emotion(emotional_threshold):
         print(f"Removed emotional speech from {folder}")
     
 
-def export_audio(sample_rate):
-    woemotion_dir = os.path.join(workdir, "Removed_Emotion")
+
+def export_audio(sample_rate, do_noise_remover, do_normalization):
+    woemotion_dir = os.path.join(workdir, "Isolated")
     export_dir = os.path.join(workdir, "Exported")
-    woemotion_folders = get_files(woemotion_dir, ".wav")
-
-    from pydub import AudioSegment
-
-    def format_audio(file_name, folder_dir):
-        file_dir = os.path.join(woemotion_dir, folder_dir, file_name)
-        raw = AudioSegment.from_file(file_dir, format="wav")
-        raw.set_channels(0)
-        raw.set_frame_rate(sample_rate)
-
-    # def format_folder(folder_name):
+    noise_removed_dir = os.path.join(workdir, "Noise_Removed")
+    woemotion_folders = get_files(woemotion_dir)
     
-    # # if os.listdir(export_dir) != []:
-    # #     print("All Done!")
-    # #     return
-    # # for folder in woemotion_folders:
-    # #     analyze_emotion_folder(folder)
-    # #     print(f"Removed emotional speech from {folder}")
+    from scipy.io import wavfile
+    import numpy as np
+
+    def find_all_mean_sd(folders_dir: str) -> tuple:
+        """
+        This function finds the mean and standard deviation of all wav files in the
+        given folder and its subfolders.
+        
+        Parameters:
+        folders_dir (str): The directory of the folder where all the wav files are.
+        
+        Returns:
+        Tuple[float, float]: The mean and standard deviation of all wav files.
+        """
+        mean = 0
+        sd = 0
+        count = 0
+        for folder in get_files(folders_dir):
+            folder_dir = os.path.join(folders_dir, folder)
+            for file in get_files(folder_dir):
+                rate, data = wavfile.read(os.path.join(folder_dir, file))
+                mean += np.mean(data)
+                sd += np.std(data)
+                count += 1
+        mean /= count
+        sd /= count
+        return mean, sd
+
+
+    def normalize(folder, mean, sd):
+        """
+        TODO: Add other normalization methods
+        Normalizes audio files in `folder` directory.
+
+        Parameters:
+        folder (str): The directory containing the audio files.
+        mean (float): The mean value used for normalization.
+        sd (float): The standard deviation value used for normalization.
+
+        Returns:
+        None
+
+        """
+        for file in get_files(folder, '.wav'):
+            file_dir = os.path.join(export_dir, file)
+            rate, data = wavfile.read(file_dir)
+            mean_subtracted = data - mean
+            eps = 2**-30
+            output = mean_subtracted / (sd + eps)
+            normalized_file_dir = os.path.join(normalization_dir, file)
+            wavfile.write(normalized_file_dir, rate, output)
+
+
+    def noise_remove(folder_dir):
+        for file in get_files(folder_dir):
+            file_dir = os.path.join(folder_dir, file)
+            os.system(f"deepFilter -m DeepFilterNet2 {file_dir} --output-dir {noise_removed_dir}")
+            os.rename(os.path.join(noise_removed_dir, file.split('.')[0]+"_DeepFilterNet2.wav"), 
+                os.path.join(noise_removed_dir, file.replace('_DeepFilterNet2', '')))
+        
+
+    def format_audio(folder):
+        folder_dir = os.path.join(woemotion_dir, folder)
+        combined = AudioSegment.empty()
+        if len(get_files(folder_dir, '.wav')) == 0:
+            return
+        for file in get_files(folder_dir, '.wav'):
+            file_dir = os.path.join(woemotion_dir, folder_dir, file)
+            raw = AudioSegment.from_file(file_dir, format="wav")
+            raw = raw.set_channels(1)
+            raw = raw.set_frame_rate(sample_rate)
+            combined += raw
+        combined = combined.export(os.path.join(export_dir, folder+'.wav'), format='wav')
+    
+    if os.listdir(export_dir) != []:
+        print("file(s) have already been formatted! Skipping...")
+        return
+
+    if do_normalization:
+        mean, sd = find_all_mean_sd(woemotion_dir)
+        try: os.mkdir(os.path.join(workdir, 'Normalized'))
+        except: pass
+        normalization_dir = os.path.join(workdir, 'Normalized')
+    for folder in woemotion_folders:
+        format_audio(folder)
+        print(f"Formatted Audio for {folder}")
+    if do_noise_remover:
+        print("Removing Noise...") 
+        noise_remove(export_dir)
+    if do_normalization:
+        print("Normalizing Audio...")
+        normalize(export_dir, mean, sd)
+        
 
 
 
 
 import argparse
-parser = argparse.ArgumentParser(description='Modify thresholds for voice data refinement')
-parser.add_argument("--rawdir", help="Location for unfiltered audio", required=True)
-parser.add_argument("--workdir", help="Location for the various stages of refinement", required=True)
-# parser.add_argument("--onset", help="Onset speaker activation threshold 0.0-1.5", default=0.4)
-parser.add_argument("--emotional_threshold", help="Change the shift in pitch needed to be considered emotional value 0.0-2.0", default=1.2, type=float)
-parser.add_argument("--speaker_threshold", help="Threshold of how dissimilar two speakers must be to be seperated, value 0.0-1.5", default=0.75, type=float)
-parser.add_argument("--verification_threshold", help="How similar two speakers must be to be considered the same person, value 0.0-1.0", default=0.90, type=float)
-parser.add_argument("--playlist_url", help="YouTube video playlist to download")
-parser.add_argument("--vad_threshold", help="Higher the number the more selective the VAD model is (0-100)", default=75, type=int)
-parser.add_argument("--noise_agressiveness", help="Higher the number the less sensitive to background noise (0.0-1.5)", default=0.75, type=float)
+parser = argparse.ArgumentParser(description='Modify parameters for voice data refinement')
+parser.add_argument("--raw_dir", help="Dir for unfiltered audio (path)", required=True)
+parser.add_argument("--work_dir", help="Dir for the various stages of refinement (path)", required=True)
+parser.add_argument("--sample_rate", help="Exported sample rate (default: 22050)", default=22050, type=int)
+#parser.add_argument("--emotional_threshold", help="Threshold to be considered emotional value (0.0-2.0)", default=1.2, type=float)
+parser.add_argument("--speaker_threshold", help="Lower the value, the more sensitve it seperates speakers (default: 0.2)", default=0.2, type=float)
+parser.add_argument("--verification_threshold", help="Higher the value the more strict verification is (default: 0.90)", default=0.90, type=float)
+parser.add_argument("--playlist_url", help="YouTube video playlist to download (url)", type=str)
+parser.add_argument("--vad_threshold", help="Higher the number the more selective the VAD model is (Default: 75)", default=75, type=int)
+parser.add_argument("--noise_agressiveness", help="Lower the number the more sensitive to background noise (Default: 0.75)", default=0.75, type=float)
 parser.add_argument("--samples_length", help="Length of each sample (in seconds)", type=int, default=None)
+parser.add_argument("--do_noise_reduction", help="Noise reduction on files", type=bool, default=False)
+parser.add_argument("--do_normalize", help="Mean/SD normalizaton", type=bool, default=True)
+
+
 
 
 args = parser.parse_args()
-rawdir = args.rawdir
-workdir = args.workdir
+rawdir = args.raw_dir
+workdir = args.work_dir
 
 
 SPEAKER_DIARIZATION = {
@@ -450,13 +829,21 @@ SPEAKER_DIARIZATION = {
             "min_duration_off": 0.0
 }
 
+
+from torch import cuda
+if cuda.is_available() == False:
+    print("CUDA device not found! If you have CUDA intalled, please check if its propery configured")
+    print("Program will continue, but at a much slower pace.")
+else: print("CUDA device configured correctly!")
+
 if args.playlist_url is not None:
     download_videos(args.playlist_url)
 create_core_folders()
 if args.samples_length!=None:
     create_samples(args.samples_length)
-
+print(args.do_normalize)
 remove_nonspeech(args.vad_threshold, args.noise_agressiveness)
 remove_overlap()
 isolate_speaker(args.verification_threshold)
-remove_emotion(args.emotional_threshold)
+#remove_emotion(args.emotional_threshold)
+export_audio(args.sample_rate, args.do_noise_reduction, args.do_normalize)
