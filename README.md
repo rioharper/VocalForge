@@ -6,7 +6,7 @@ Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github
 
 *NOTE: While this does reduce time on spent on dataset curation, verifying the output at each step is important as it isn't perfect*
 
-![[join_processes.svg]]
+![a flow chart of how this repo works](https://github.com/rioharper/VocalForge/blob/main/media/join_processes.svg?raw=true)
 
 ## Features:
 
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 
 
 Pyannote models need to be "signed up for" in Hugging Face for research purposes. Don't worry, all it asks for is your purpose, website and organization. The following models will have to be manually visited and given the appropriate info:
-![[huggingface.png]]
+![an example of signing up for a model](https://github.com/rioharper/VocalForge/blob/main/media/huggingface.png?raw=true)
 - [Brouhaha (VAD model)](https://huggingface.co/pyannote/brouhaha)
 - [Overlapped Speech Detection](https://huggingface.co/pyannote/overlapped-speech-detection)
 - [Speaker Diarization](https://huggingface.co/pyannote/speaker-diarization)
