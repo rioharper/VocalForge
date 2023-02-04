@@ -8,6 +8,7 @@ Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github
 
 ![a flow chart of how this repo works](https://github.com/rioharper/VocalForge/blob/main/media/join_processes.svg?raw=true)
 
+
 ## Features:
 
 #### `refineaudio.py`
@@ -85,6 +86,7 @@ Error rate will vary widely depending on how you set the following parameters, s
 --offset offset for audio clips in ms (int, default: 0)
 --threshold min score of segmentation confidence to split (float, range: 0-10, lower=more selective, default=2.5)
 ```
+
 
 ## TODO
 - [ ] Refactor functions for API and toolkit support
