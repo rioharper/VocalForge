@@ -32,8 +32,11 @@ Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github
 ## Setup/Requirements
 
 🐧 **NEMO only supports Linux**
+
 Python 3.8 has been tested, newer versions should work
+
 CUDA is required to run all models
+
 a [Hugging Face account](https://huggingface.co/) is required (it's free and super helpful!)
 
 ```bash
