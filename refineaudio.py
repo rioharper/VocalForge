@@ -799,18 +799,40 @@ def export_audio(sample_rate, do_noise_remover, do_normalization):
 
 import argparse
 parser = argparse.ArgumentParser(description='Modify parameters for voice data refinement')
-parser.add_argument("--raw_dir", help="Dir for unfiltered audio (path)", required=True)
-parser.add_argument("--work_dir", help="Dir for the various stages of refinement (path)", required=True)
-parser.add_argument("--sample_rate", help="Exported sample rate (default: 22050)", default=22050, type=int)
+parser.add_argument("--raw_dir", 
+    help="directory for unfitered audio (str, required)", 
+    required=True)
+parser.add_argument("--work_dir", 
+    help="directory for the various stages of refinement (str, required)", 
+    required=True)
+parser.add_argument("--sample_rate",
+    help="exported sample rate (int, default: 22050)",
+    default=22050, type=int)
+parser.add_argument("--speaker_threshold",
+    help="The lower the value, the more sensitive speaker seperation is (float, default: 0.2)",
+    default=0.2, type=float)
+parser.add_argument("--verification_threshold",
+    help="The higher the value, the more similar two voices must be during voice verification (float, range: 0.0-0.99, default: 0.9)",
+    default=0.90, type=float)
+parser.add_argument("--playlist_url",
+    help="URL to YouTube playlist to be downloaed to raw_dir (str)",
+    type=str)
+parser.add_argument("--vad_threshold",
+    help="The higher the value, the more selective the VAD model will be (int, default: 75)",
+    default=75, type=int)
+parser.add_argument("--snr_change", 
+    help="The lower the value, the more sensitive the model is to changes in SNR, such as laughter or loud noises (float, default: 0.75)", 
+    default=0.75, type=float)
+parser.add_argument("--samples_length", 
+    help="create sample voice clips from raw_dir for testing purposes (in seconds)", 
+    type=int, default=None)
+parser.add_argument("--do_noise_reduction", 
+    help="use deepfilternet 2 to reduce noise in the exported files (bool, default: False)", 
+    type=bool, default=False)
+parser.add_argument("--do_normalize",
+    help="use mean/sd normalization, can be useful for some DL models (bool, default: False)", 
+    type=bool, default=False)
 #parser.add_argument("--emotional_threshold", help="Threshold to be considered emotional value (0.0-2.0)", default=1.2, type=float)
-parser.add_argument("--speaker_threshold", help="Lower the value, the more sensitve it seperates speakers (default: 0.2)", default=0.2, type=float)
-parser.add_argument("--verification_threshold", help="Higher the value the more strict verification is (default: 0.90)", default=0.90, type=float)
-parser.add_argument("--playlist_url", help="YouTube video playlist to download (url)", type=str)
-parser.add_argument("--vad_threshold", help="Higher the number the more selective the VAD model is (Default: 75)", default=75, type=int)
-parser.add_argument("--noise_agressiveness", help="Lower the number the more sensitive to background noise (Default: 0.75)", default=0.75, type=float)
-parser.add_argument("--samples_length", help="Length of each sample (in seconds)", type=int, default=None)
-parser.add_argument("--do_noise_reduction", help="Noise reduction on files", type=bool, default=False)
-parser.add_argument("--do_normalize", help="Mean/SD normalizaton", type=bool, default=True)
 
 
 

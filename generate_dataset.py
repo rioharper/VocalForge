@@ -102,7 +102,7 @@ def process(model:str, length:int, lang:str):
     # Prepare directory paths
     transcription_dir = os.path.join(work_dir, "transcription")
     processed_dir = os.path.join(work_dir, "processed")
-    transcripted_folders = get_files(transcription_dir)
+    transcripted_files = get_files(transcription_dir)
 
     # Check if the folders have already been processed
     if os.listdir(processed_dir) != []:
@@ -110,7 +110,7 @@ def process(model:str, length:int, lang:str):
         return
 
     # Import required modules
-    import process_text
+    from utils import process_text
     from nemo.collections.asr.models import ASRModel
     from pydub import AudioSegment
 
@@ -167,20 +167,19 @@ def process(model:str, length:int, lang:str):
                 sentence = sentence.strip()
                 f.write(sentence+"\n")
 
-    def prepare_folder(folder):
-        for file in get_files(transcription_dir, 'txt'):
-            textfile_dir = os.path.join(transcription_dir, file)
-            audfile_dir = os.path.join(aud_dir, file.replace('.txt', '.wav'))
-            folder_dir = os.path.join(processed_dir, file.replace('.txt',''))
-            sentence_types = prepare_text(textfile_dir)
-            try: os.mkdir(folder_dir)
-            except: pass
-            for name, sentences in sentence_types.items():
-                write_file(file.replace('.txt', ''), name, sentences.splitlines())
-            prepare_audio(audfile_dir, os.path.join(folder_dir, file.replace('.txt', '.wav')))
+    def prepare_file(file):
+        textfile_dir = os.path.join(transcription_dir, file)
+        audfile_dir = os.path.join(aud_dir, file.replace('.txt', '.wav'))
+        folder_dir = os.path.join(processed_dir, file.replace('.txt',''))
+        sentence_types = prepare_text(textfile_dir)
+        try: os.mkdir(folder_dir)
+        except: pass
+        for name, sentences in sentence_types.items():
+            write_file(file.replace('.txt', ''), name, sentences.splitlines())
+        prepare_audio(audfile_dir, os.path.join(folder_dir, file.replace('.txt', '.wav')))
     
-    for folder in transcripted_folders:
-            prepare_folder(os.path.join(transcription_dir, folder))
+    for file in transcripted_files:
+        prepare_file(file)
 
 
 def segment(model: str, window_size: int):
@@ -202,7 +201,7 @@ def segment(model: str, window_size: int):
         print("folder(s) have already found its split timestamps! Skipping...")
         return
     import statistics
-    from ctc import ctc
+    from utils import ctc
     import nemo.collections.asr as nemo_asr
     model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained(model)
     loss = []
@@ -223,7 +222,7 @@ def segment(model: str, window_size: int):
         for aud_file in get_files(processed_folder_dir, '.wav'):
             aud_path = os.path.join(processed_folder_dir, aud_file)
             outfile = segmented_dir + '/' + aud_file.replace('.wav', '_segmented.txt')
-            loss = ctc(model, aud_path, outfile, window_size)
+            loss = ctc.ctc(model, aud_path, outfile, window_size)
             loss_folder.append(loss)
         try:
             return statistics.mean(loss_folder)
@@ -273,7 +272,7 @@ def split(offset: int, max_duration: int, threshold: float) -> None:
 def generate_dataset(threshold: float) -> None:
     """
     Generates a dataset by processing audio files and corresponding metadata.
-    
+
     TODO: 
         Add the ability for user to delete unwanted files, and have an autoupdating metadata when called
         List the dataset length (in seconds)
@@ -366,16 +365,34 @@ def generate_dataset(threshold: float) -> None:
 
 
 import argparse
-parser = argparse.ArgumentParser(description='Modify thresholds for voice data refinement')
-parser.add_argument("--aud_dir", help="Location for unfiltered audio", required=True)
-parser.add_argument("--work_dir", help="Location for the various stages of refinement", required=True)
-parser.add_argument("--model", help="Choose an Nvidia ASR model", default='nvidia/stt_en_citrinet_1024_gamma_0_25', type=str)
-parser.add_argument("--max_length", help="Max length in words of each entry", default=25, type=int)
-parser.add_argument("--lang", help="language of the speaker", default='en', type=str)
-parser.add_argument("--window_size", help="Window size for ctc segmentation algorithm", default=8000, type=int)
-parser.add_argument("--offset", help="delay for clips in ms", default=0, type=int)
-parser.add_argument("--max_duration", help="max length of a single audio clip in s", default=40, type=int)
-parser.add_argument("--threshold", help="min score of segmentation confidence to split (0-10, lower=more selective)", default=2.5, type=float)
+parser = argparse.ArgumentParser(description='Modify parameters for dataset generation')
+parser.add_argument("--aud_dir",
+    help="directory for audio (str, required)",
+    required=True)
+parser.add_argument("--work_dir",
+    help="directory for the various stages of generation (str, required)",
+    required=True)
+parser.add_argument("--model",
+    help="name of Nvidia ASR model (str, default: nvidia/stt_en_citrinet_1024_gamma_0_25)", 
+    default='nvidia/stt_en_citrinet_1024_gamma_0_25', type=str)
+parser.add_argument("--max_length", 
+    help="max length in words of each utterence (int, default: 25)", 
+    default=25, type=int)
+parser.add_argument("--max_duration",
+    help="max length of a single audio clip in s (int, default: 40)",
+    default=40, type=int)
+parser.add_argument("--lang", 
+    help="language of the speaker (str, default: en)", 
+    default='en', type=str)
+parser.add_argument("--window_size", 
+    help="window size for ctc segmentation algorithm (int, default: 8000)", 
+    default=8000, type=int)
+parser.add_argument("--offset", 
+    help="offset for audio clips in ms (int, default: 0)", 
+    default=0, type=int)
+parser.add_argument("--threshold", 
+    help="min score of segmentation confidence to split (float, range: 0-10, lower=more selective, default=2.5)", 
+    default=2.5, type=float)
 
 
 args = parser.parse_args()
