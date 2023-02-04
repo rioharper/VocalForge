@@ -100,3 +100,4 @@ Error rate will vary widely depending on how you set the following parameters, s
 - [ ] Add a step in the audio refinement processs to remove emotional speech
 - [ ] Add other normalization methods for audio
 - [ ] Add other dataset formats for generation
+- [ ] Utilize TTS models to automatically generate datasets, with audio augmentation to create diversity
