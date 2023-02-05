@@ -68,28 +68,46 @@ Error rate will vary widely depending on how you set the following parameters, s
 ##### `refineaudio.py --help`
 ```
 --raw_dir directory for unfitered audio (str, required)
+
 --work_dir directory for the various stages of refinement (str, required)
+
 --sample rate Exported sample rate (int, default: 22050)
+
 --speaker_threshold The lower the value, the more sensitive speaker seperation is (float, default: 0.2)
+
 --verification_threshold The higher the value, the more similar two voices must be during voice verification (float, default: 0.9)
+
 --playlist_url URL to YouTube playlist to be downloaed to raw_dir (str)
+
 --vad_threshold The higher the value, the more selective the VAD model will be (int, default: 75)
+
 --snr_change The lower the value, the more sensitive the model is to changes in SNR, such as laughter or loud noises (float, default: 0.75)
+
 --sample_length create sample voice clips from raw_dir for testing purposes (in seconds)
+
 --do_noise_reduction use deepfilternet 2 to reduce noise in the exported files (bool, default: False)
+
 --do_normalize use mean/sd normalization, can be useful for some DL models (bool, default: False)
 ```
 
 ##### `generate_dataset.py --help`
 ```
 --raw_dir directory for audio (str, required)
+
 --work_dir directory for the various stages of generation (str, required)
+
 --model name of Nvidia ASR model (str, default: nvidia/stt_en_citrinet_1024_gamma_0_25)
+
 --max_length max length in words of each utterence (int, default: 25)
+
 --max_duration max length of a single audio clip in s (int, default: 40)
+
 --lang language of the speaker (str, default: en)
+
 --window_size window size for ctc segmentation algorithm (int, default: 8000)
+
 --offset offset for audio clips in ms (int, default: 0)
+
 --threshold min score of segmentation confidence to split (float, range: 0-10, lower=more selective, default=2.5)
 ```
 
