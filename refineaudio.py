@@ -861,7 +861,7 @@ if args.playlist_url is not None:
 create_core_folders()
 if args.samples_length!=None:
     create_samples(args.samples_length)
-print(args.do_normalize)
+    
 remove_nonspeech(args.vad_threshold, args.snr_change)
 remove_overlap()
 isolate_speaker(args.verification_threshold)
