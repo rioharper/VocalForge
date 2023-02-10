@@ -792,8 +792,6 @@ def export_audio(sample_rate, do_noise_remover, do_normalization):
     if do_normalization:
         print("Normalizing Audio...")
         normalize(export_dir, mean, sd)
-        
-
 
 
 
@@ -864,6 +862,7 @@ create_core_folders()
 if args.samples_length!=None:
     create_samples(args.samples_length)
 print(args.do_normalize)
+
 remove_nonspeech(args.vad_threshold, args.snr_change)
 remove_overlap()
 isolate_speaker(args.verification_threshold)
