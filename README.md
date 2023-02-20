@@ -60,6 +60,8 @@ Pyannote models need to be "signed up for" in Hugging Face for research purposes
 - [Brouhaha (VAD model)](https://huggingface.co/pyannote/brouhaha)
 - [Overlapped Speech Detection](https://huggingface.co/pyannote/overlapped-speech-detection)
 - [Speaker Diarization](https://huggingface.co/pyannote/speaker-diarization)
+- [Embedding](https://huggingface.co/pyannote/embedding)
+- [Segmentation](https://huggingface.co/pyannote/segmentation)
 
 
 ## Parameters
