@@ -75,8 +75,6 @@ Error rate will vary widely depending on how you set the following parameters, s
 
 --sample rate Exported sample rate (int, default: 22050)
 
---speaker_threshold The lower the value, the more sensitive speaker seperation is (float, default: 0.2)
-
 --verification_threshold The higher the value, the more similar two voices must be during voice verification (float, default: 0.9)
 
 --playlist_url URL to YouTube playlist to be downloaed to raw_dir (str)
@@ -86,10 +84,6 @@ Error rate will vary widely depending on how you set the following parameters, s
 --snr_change The lower the value, the more sensitive the model is to changes in SNR, such as laughter or loud noises (float, default: 0.75)
 
 --sample_length create sample voice clips from raw_dir for testing purposes (in seconds)
-
---do_noise_reduction use deepfilternet 2 to reduce noise in the exported files (bool, default: False)
-
---do_normalize use mean/sd normalization, can be useful for some DL models (bool, default: False)
 ```
 
 ##### `generate_dataset.py --help`
@@ -115,7 +109,7 @@ Error rate will vary widely depending on how you set the following parameters, s
 
 
 ## TODO
-- [ ] Refactor functions for API and toolkit support
+- [ ] Refactor functions for API and toolkit support #In progress!
 - [ ] "Sync" datasets with the metadata file if audio clips are deleted after being generated
 - [ ] Add a step in the audio refinement processs to remove emotional speech
 - [ ] Add other normalization methods for audio
