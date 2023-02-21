@@ -1,9 +1,9 @@
 import os
 from torch import cuda
 import numpy as np
-import utils
 import nemo.collections.asr as nemo_asr
 import scipy.io.wavfile as wav
+from utils.utils import get_segments
 
 def split_on_newline(dir):
     text = ''
@@ -65,7 +65,8 @@ def ctc(model, aud_path: str, out_file: str, window_size: int):
     cuda.empty_cache()
 
     # Get the recognized text segments
-    return utils.get_segments(
+    
+    return get_segments(
         log_probs,
         aud_path,
         raw_path,

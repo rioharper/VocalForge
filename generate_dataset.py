@@ -1,25 +1,13 @@
 import os
+from utils.utils import create_core_folders, get_files
+from pydub import AudioSegment
+from utils import process_text
+import statistics
+import pandas as pd
+import os
+import shutil
 
-def get_files(dir, ext=None):
-    import natsort
-    files = []
-    for file in os.listdir(dir):
-        if ext!=None:
-            if file.endswith(ext):
-                files.append(file)
-        else: files.append(file)
-    files = natsort.natsorted(files)
-    return files
-
-def create_core_folders():
-    folders = ['transcription', 'processed', 'segments', 'sliced_audio', 'dataset']
-    for folder in folders:
-        folderdir = os.path.join(work_dir, folder)
-        if os.path.exists(folderdir) == False:
-            os.makedirs(folderdir)
-
-
-def transcribe():
+class Transcribe():
     """
     Transcribe audio files in a directory using a pre-trained ASR model.
     
@@ -31,20 +19,13 @@ def transcribe():
         that have already been transcribed. If a file is corrupted, the function 
         prints "file corrupted! skipping...".
     """
-    from whisper import load_model
-    
-    # create a directory for transcriptions
-    transcription_dir = os.path.join(work_dir, "transcription")
-    
-    # check if there are already transcribed files
-    if os.listdir(transcription_dir) != []:
-        print("folder(s) have already been transcribed! Skipping...")
-        return
-    
-    # load ASR model
-    model = load_model("large")
-    
-    def transcribe_folder(folder: str):
+    def __init__(self, raw_dir, out_dir=None):
+        self.Raw_Dir = raw_dir
+        self.Out_Dir = out_dir
+        from whisper import load_model
+        self.Model = load_model("large")
+
+    def transcribe_folder(self, input_dir, do_write=True):
         """
         Transcribe all audio files in a folder.
         
@@ -59,35 +40,34 @@ def transcribe():
             transcription to a text file with the same name. If the text file 
             already exists, the function skips the transcription.
         """
-        for file in get_files(folder):
+
+        for file in get_files(input_dir):
             try:
-                # join the audio file directory
-                aud_file_dir = os.path.join(aud_dir, file)
-                
-                # join the text file directory
-                text_file_dir = os.path.join(transcription_dir, file.split(".")[0]+".txt")
-                
+                text_file_dir = os.path.join(self.Out_Dir, file.split(".")[0]+".txt")
                 # check if the text file already exists
                 if not os.path.exists(text_file_dir):
                     # transcribe the audio file
-                    result = model.transcribe(aud_file_dir)
-                    
-                    # write the transcription to the text file
-                    with open(text_file_dir, 'w', encoding="UTF-8") as f:
-                        f.write(result['text'].strip())
-                        
-                    # print the transcribed file name
-                    print(f"transcribed {file}")
+                    aud_file_dir = os.path.join(input_dir, file)
+                    result = self.Model.transcribe(aud_file_dir)
+                    if do_write:
+                        self.write_transcription(result, text_file_dir)
             except:
                 # print an error message if the audio file is corrupted
                 print("file corrupted! skipping...")
     
+    def write_transcription(self, result, text_file_dir):
+        with open(text_file_dir, 'w', encoding="UTF-8") as f:
+            f.write(result['text'].strip())
+
     # transcribe all audio files in the `aud_dir` folder
-    transcribe_folder(aud_dir)
+    def run_trancription(self): 
+        if os.listdir(self.Out_Dir) != []:
+            print("folder(s) have already been transcribed! Skipping...")
+            return
+        self.transcribe_folder(self.Raw_Dir)
 
 
-
-def process(model:str, length:int, lang:str):
+class ProcessText():
     """
     This function prepares the audio and text files for language modeling.
     
@@ -99,25 +79,29 @@ def process(model:str, length:int, lang:str):
     Returns:
     None
     """
-    # Prepare directory paths
-    transcription_dir = os.path.join(work_dir, "transcription")
-    processed_dir = os.path.join(work_dir, "processed")
-    transcripted_files = get_files(transcription_dir)
+    def __init__(
+        self, 
+        input_dir: str, 
+        out_dir: str, 
+        audio_dir: str, 
+        model='nvidia/stt_en_citrinet_1024_gamma_0_25', 
+        length=25, 
+        lang='en'
+    ):
+        self.Model = model
+        self.Length = length
+        self.Lang = lang
+        self.Input_Dir = input_dir
+        self.Out_Dir = out_dir
+        self.Audio_Dir = audio_dir
+        from nemo.collections.asr.models import ASRModel
+        self.Cfg = ASRModel.from_pretrained(model_name=self.Model, return_config=True)  
 
     # Check if the folders have already been processed
-    if os.listdir(processed_dir) != []:
-        print("folder(s) have already been processed! Skipping...")
-        return
+    
+    
 
-    # Import required modules
-    from utils import process_text
-    from nemo.collections.asr.models import ASRModel
-    from pydub import AudioSegment
-
-    # Get configuration of the ASR model
-    cfg = ASRModel.from_pretrained(model_name=model, return_config=True)  
-
-    def prepare_audio(audio_dir:str, new_dir:str):
+    def prepare_audio_file(self, aud_dir, out_dir):
         """
         This function prepares the audio file for language modeling.
         
@@ -129,10 +113,10 @@ def process(model:str, length:int, lang:str):
         None
         """
         # Load audio and export as WAV format
-        raw = AudioSegment.from_file(audio_dir, format="wav")
-        raw = raw.export(new_dir, format='wav')
+        raw = AudioSegment.from_file(aud_dir, format="wav")
+        raw = raw.export(out_dir, format='wav')
     
-    def prepare_text(textfile_dir:str):
+    def prepare_text(self, textfile_dir:str):
         """
         This function prepares the text file for language modeling.
         
@@ -143,11 +127,19 @@ def process(model:str, length:int, lang:str):
         sentences (str): Processed text sentences.
         """
         # Format and normalize the text
+        lang = self.Lang
+        cfg = self.Cfg
         transcript = process_text.format_text(textfile_dir, lang)
-        sentences = process_text.split_text(transcript, lang, cfg.decoder.vocabulary, length, additional_split_symbols=None)
+        sentences = process_text.split_text(
+            transcript, 
+            lang, 
+            cfg.decoder.vocabulary, 
+            self.Length, 
+            additional_split_symbols=None
+        )
         return process_text.normalize_text(sentences, lang, cfg.decoder.vocabulary)
 
-    def write_file(file_num:str, text_type:str, sentences:str):
+    def write_file(self, file_num:str, text_type:str, sentences:str, outdir:str):
         """
         This function writes the processed text to a file.
         
@@ -160,29 +152,36 @@ def process(model:str, length:int, lang:str):
         None
         """
         file_name = f"{file_num}{text_type}"
-        file_dir = os.path.join(processed_dir, file_num, file_name)
+        file_dir = os.path.join(outdir, file_num, file_name)
         print(file_dir)
         with open(file_dir+'.txt', 'w', encoding='UTF-8') as f:
             for sentence in sentences:
                 sentence = sentence.strip()
                 f.write(sentence+"\n")
 
-    def prepare_file(file):
-        textfile_dir = os.path.join(transcription_dir, file)
-        audfile_dir = os.path.join(aud_dir, file.replace('.txt', '.wav'))
-        folder_dir = os.path.join(processed_dir, file.replace('.txt',''))
-        sentence_types = prepare_text(textfile_dir)
+    def prepare_file(self, text_dir, aud_dir, out_dir):
+        #folder_dir = os.path.join(processed_dir, file.replace('.txt',''))
+        base_name = os.path.basename(text_dir)
+        sentence_types = self.prepare_text(text_dir)
+        folder_dir = os.path.join(out_dir, base_name.replace('.txt', ''))
         try: os.mkdir(folder_dir)
         except: pass
         for name, sentences in sentence_types.items():
-            write_file(file.replace('.txt', ''), name, sentences.splitlines())
-        prepare_audio(audfile_dir, os.path.join(folder_dir, file.replace('.txt', '.wav')))
+            self.write_file(base_name.replace('.txt', ''), name, sentences.splitlines(), out_dir)
+        self.prepare_audio_file(aud_dir, os.path.join(folder_dir, base_name.replace('.txt', '.wav')))
     
-    for file in transcripted_files:
-        prepare_file(file)
+    def run_processing(self):
+        print(self.Out_Dir)
+        if os.listdir(self.Out_Dir) != []:
+            print("folder(s) have already been processed! Skipping...")
+            return
+        for file in get_files(self.Input_Dir, '.txt'):
+            text_dir = os.path.join(self.Input_Dir, file)
+            audfile_dir = os.path.join(self.Audio_Dir, file.replace('.txt', '.wav'))
+            self.prepare_file(text_dir, audfile_dir, self.Out_Dir)
 
 
-def segment(model: str, window_size: int):
+class Segment():
     """
     This function segments audio files into multiple parts based on the timestamps obtained
     using a model. The timestamps are used to split the audio file into smaller parts and
@@ -195,18 +194,17 @@ def segment(model: str, window_size: int):
     Returns:
     None
     """
-    processed_dir = os.path.join(work_dir, "processed")
-    segmented_dir = os.path.join(work_dir, 'segments')
-    if os.listdir(segmented_dir) != []:
-        print("folder(s) have already found its split timestamps! Skipping...")
-        return
-    import statistics
-    from utils import ctc
-    import nemo.collections.asr as nemo_asr
-    model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained(model)
-    loss = []
+    def __init__(self, input_dir, output_dir, model='nvidia/stt_en_citrinet_1024_gamma_0_25', window_size=8000):
+        self.Input_Dir = input_dir
+        self.Out_Dir = output_dir
+        self.Window_Size = window_size
+        import nemo.collections.asr as nemo_asr
+        self.Model = nemo_asr.models.EncDecCTCModelBPE.from_pretrained(model)
+        self.Loss = []
+        self.Median_Loss = None
 
-    def segment_folder(folder):
+    def segment_folder(self, folder_dir, out_dir):
+        from utils import ctc
         """
         This function segments audio files in a folder into multiple parts based on
         the timestamps obtained using a model.
@@ -217,26 +215,33 @@ def segment(model: str, window_size: int):
         Returns:
         float: Mean loss obtained from the model.
         """
-        processed_folder_dir = os.path.join(processed_dir, folder)
         loss_folder = []
-        for aud_file in get_files(processed_folder_dir, '.wav'):
-            aud_path = os.path.join(processed_folder_dir, aud_file)
-            outfile = segmented_dir + '/' + aud_file.replace('.wav', '_segmented.txt')
-            loss = ctc.ctc(model, aud_path, outfile, window_size)
+        for aud_file in get_files(folder_dir, '.wav'):
+            aud_path = os.path.join(folder_dir, aud_file)
+            outfile = os.path.join(out_dir, aud_file.replace('.wav', '_segmented.txt'))
+            loss = ctc.ctc(self.Model, aud_path, outfile, self.Window_Size)
             loss_folder.append(loss)
         try:
             return statistics.mean(loss_folder)
         except: return None
 
-    for folder in get_files(processed_dir):
-        value = segment_folder(folder)
-        if value != None: loss.append(value)
-        print(f"Found timestamps for {folder}")
-    print(f"median loss: {statistics.median(loss)}")
+    def find_median_loss(self):
+        self.Median_Loss = statistics.median(self.Loss)
 
-    
+    def run_segmentation(self):
+        if os.listdir(self.Out_Dir) != []:
+            print("folder(s) have already found its split timestamps! Skipping...")
+            return
+        for folder in get_files(self.Input_Dir):
+            folder_dir = os.path.join(self.Input_Dir, folder)
+            value = self.segment_folder(folder_dir, self.Out_Dir)
+            if value != None: self.Loss.append(value)
+        self.Median_Loss = statistics.median(self.Loss)
+        self.find_median_loss()
+        print(f"median loss: {self.Median_Loss}")
 
-def split(offset: int, max_duration: int, threshold: float) -> None:
+
+class SplitAudio():
     """
     This function splits the audio into clips using the timestamps in the
     segmented audio folder.
@@ -250,26 +255,36 @@ def split(offset: int, max_duration: int, threshold: float) -> None:
     None
 
     """
-    sliced_audio_dir = os.path.join(work_dir, "sliced_audio")
-    segmented_dir = os.path.join(work_dir, 'segments')
-    if os.listdir(sliced_audio_dir) != []:
-        print("audio has already been sliced! Skipping...")
-        return
-    from utils import process_alignment
+    def __init__(self, input_dir, output_dir, offset=0, max_duration=40, threshold=2.5):
+        self.Input_Dir = input_dir
+        print(self.Input_Dir)
+        self.Out_Dir = output_dir
+        self.Offset = offset
+        self.Max_Duration = max_duration
+        self.Threshold = -threshold
+        
 
-    threshold = -threshold
+    def run_slicing(self):
+        from utils.utils import process_alignment
+        if os.listdir(self.Out_Dir) != []:
+            print("audio has already been sliced! Skipping...")
+            return
+        for file in get_files(self.Input_Dir, '.txt'):
+            clips_folder_dir = os.path.join(self.Out_Dir, file.split('_segmented')[0])
+            os.mkdir(clips_folder_dir)
+            file_dir = os.path.join(self.Input_Dir, file)
+            process_alignment(
+                alignment_file=file_dir,
+                clips_dir=clips_folder_dir,
+                offset = self.Offset, 
+                max_duration = self.Max_Duration, 
+                threshold = self.Threshold
+            )
 
-    for file in get_files(segmented_dir):
-        clips_folder_dir = os.path.join(sliced_audio_dir, file.split('_segmented')[0])
-        os.mkdir(clips_folder_dir)
-        file_dir = os.path.join(segmented_dir, file)
-        process_alignment(file_dir, clips_folder_dir, offset, max_duration, threshold)
-        print(f"clips exported for {file}")
 
 
 
-
-def generate_dataset(threshold: float) -> None:
+class generate_dataset():
     """
     Generates a dataset by processing audio files and corresponding metadata.
 
@@ -283,25 +298,23 @@ def generate_dataset(threshold: float) -> None:
     Returns:
         None
     """
-    import pandas as pd
-    import os
-    import shutil
+    def __init__(self, segment_dir, sliced_aud_dir, output_dir, threshold=2.5):
+        self.Segment_Dir = segment_dir
+        self.Sliced_Aud_Dir = sliced_aud_dir
+        self.Out_Dir = output_dir
+        self.Threshold = threshold
+        self.Dataset = []
+
 
     # Create directories for storing processed data
-    segmented_dir = os.path.join(work_dir, 'segments')
-    sliced_audio_dir = os.path.join(work_dir, "sliced_audio")
-    dataset_dir = os.path.join(work_dir, "dataset")
 
-    if os.listdir(dataset_dir) != []:
-        print("Dataset has already been created! Skipping...")
-        return
-
-    def create_metadata(file_path: str, thres: float):
+    
+    def create_metadata(self, file_path: str, thres: float):
         """
         Creates metadata for the audio data.
 
         Parameters:
-            file_path (str): Path of the file containing audio data.
+            file_path (str): Path to audio file.
             thres (float): Threshold value used to filter audio data.
 
         Returns:
@@ -332,7 +345,7 @@ def generate_dataset(threshold: float) -> None:
         df = pd.DataFrame(metadata)
         return df
 
-    def create_dataset(metadata: pd.DataFrame, dataset_dir: str):
+    def create_dataset(self, metadata: pd.DataFrame):
         """
         Creates a dataset by copying audio files and saving metadata.
 
@@ -343,26 +356,101 @@ def generate_dataset(threshold: float) -> None:
         Returns:
             None
         """
-        wav_dir = os.path.join(dataset_dir, 'wavs')
+        wav_dir = os.path.join(self.Out_Dir, 'wavs')
         try:
-            os.mkdir(dataset_dir)
+            os.mkdir(wav_dir)
         except:
             pass
-        metadata.to_csv(os.path.join(dataset_dir, "metadata.csv"),
+        metadata.to_csv(os.path.join(self.Out_Dir, "metadata.csv"),
                         index=False, header=False, sep='|')
-        for folder in get_files(sliced_audio_dir):
-            aud_clips_dir = os.path.join(sliced_audio_dir, folder)
+        for folder in get_files(self.Sliced_Aud_Dir):
+            aud_clips_dir = os.path.join(self.Sliced_Aud_Dir, folder)
             destination = shutil.copytree(aud_clips_dir, wav_dir, dirs_exist_ok=True)
     
-    datasets = []
-    for file in get_files(segmented_dir):
-        file_dir = os.path.join(segmented_dir, file)
-        datasets.append(create_metadata(file_dir, threshold))
-    metadata = pd.concat(datasets)
-    create_dataset(metadata, dataset_dir)
-    print("Dataset has been created!")
+    def run_dataset_generation(self):
+        if os.listdir(self.Out_Dir) != []:
+            print("Dataset has already been created! Skipping...")
+            return
+        for file in get_files(self.Segment_Dir, '.txt'):
+            file_dir = os.path.join(self.Segment_Dir, file)
+            self.Dataset.append(self.create_metadata(file_dir, self.Threshold))
+        metadata = pd.concat(self.Dataset)
+        self.create_dataset(metadata)
+        print("Dataset has been created!")
 
 
+class RefineText():
+    def __init__(
+        self, 
+        aud_dir, 
+        transcription_dir=None,
+        processed_text_dir=None,
+        segment_dir=None,
+        sliced_audio_dir=None,
+        dataset_dir=None,
+        model='nvidia/stt_en_citrinet_1024_gamma_0_25',
+        window_size=8000,
+        offset=0,
+        max_duration=40,
+        max_length=25,
+        threshold=2.5,
+        lang='en',
+    ):
+        self.Aud_Dir = aud_dir
+        self.Transcription_Dir = transcription_dir
+        self.Processed_Text_Dir = processed_text_dir
+        self.Segmented_Dir = segment_dir
+        self.Sliced_Audio_Dir = sliced_audio_dir
+        self.Dataset_Dir = dataset_dir
+        self.Model = model
+        self.Max_Length = max_length
+        self.Max_Duration = max_duration
+        self.Window_Size = window_size
+        self.Offset = offset
+        self.Threshold = threshold
+        self.Lang = lang
+
+        self.Transcription = Transcribe(
+            self.Aud_Dir, 
+            self.Transcription_Dir
+        )
+        self.ProcessText = ProcessText(
+            input_dir = self.Transcription_Dir, 
+            out_dir= self.Processed_Text_Dir,
+            audio_dir = self.Aud_Dir,
+            model = self.Model,
+            length = self.Max_Length,
+            lang=self.Lang
+        )
+        self.Segment = Segment(
+            input_dir = self.Processed_Text_Dir, 
+            output_dir = self.Segmented_Dir,
+            model=self.Model,
+            window_size=self.Window_Size
+        )
+        self.Split = SplitAudio(
+            input_dir = self.Segmented_Dir, 
+            output_dir = self.Sliced_Audio_Dir,
+            offset = self.Offset,
+            max_duration = self.Max_Duration,
+            threshold = self.Threshold
+        )
+        self.Dataset = generate_dataset(
+            segment_dir = self.Segmented_Dir, 
+            sliced_aud_dir = self.Sliced_Audio_Dir,
+            output_dir = self.Dataset_Dir,
+            threshold = self.Threshold
+        )
+
+    def refine_text(self):
+        self.Transcription.run_trancription()
+        self.ProcessText.run_processing()
+        self.Segment.run_segmentation()
+        self.Split.run_slicing()
+        self.Dataset.run_dataset_generation()
+
+
+        
 
 import argparse
 parser = argparse.ArgumentParser(description='Modify parameters for dataset generation')
@@ -399,11 +487,28 @@ args = parser.parse_args()
 aud_dir = args.aud_dir
 work_dir = args.work_dir
 
+folders = ['transcription', 'processed', 'segments', 'sliced_audio', 'dataset']
+create_core_folders(folders, work_dir)
 
-create_core_folders()
-transcribe()
-process(args.model, args.max_length, args.lang)
-segment(args.model, args.window_size)
-split(args.offset, args.max_duration, args.threshold)
-generate_dataset(args.threshold)
+RefineText = RefineText(
+    aud_dir=aud_dir, 
+    transcription_dir=os.path.join(work_dir, 'transcription'),
+    processed_text_dir=os.path.join(work_dir, 'processed'),
+    segment_dir=os.path.join(work_dir,'segments'),
+    sliced_audio_dir=os.path.join(work_dir,'sliced_audio'),
+    dataset_dir=os.path.join(work_dir, 'dataset'),
+    model=args.model,
+    window_size=args.window_size,
+    offset=args.offset,
+    max_duration=args.max_duration,
+    max_length=args.max_length,
+    threshold=args.threshold,
+    lang=args.lang
+)
+RefineText.refine_text()
+# transcribe()
+# process(args.model, args.max_length, args.lang)
+# segment(args.model, args.window_size)
+# split(args.offset, args.max_duration, args.threshold)
+# generate_dataset(args.threshold)
 

@@ -647,7 +647,9 @@ else: print("CUDA device configured correctly!")
 
 if args.playlist_url is not None:
     download_videos(args.playlist_url, rawdir)
-create_core_folders(workdir)
+
+folders = ['Isolated', 'No_Overlap', 'Samples', "Only_Voice", "Verification", "Exported", 'Noise_Removed', 'Normalized']
+create_core_folders(folders, workdir)
 if args.samples_length is not None:
     create_samples(args.samples_length, args.raw_dir, os.path.join(args.work_dir, 'Samples'))
     rawdir = os.path.join(args.work_dir, 'Samples')
