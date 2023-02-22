@@ -109,7 +109,7 @@ Error rate will vary widely depending on how you set the following parameters, s
 
 
 ## TODO
-- [ ] Refactor functions for API and toolkit support #In progress!
+- [X] Refactor functions for API and toolkit support
 - [ ] "Sync" datasets with the metadata file if audio clips are deleted after being generated
 - [ ] Add a step in the audio refinement processs to remove emotional speech
 - [ ] Add other normalization methods for audio
