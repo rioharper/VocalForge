@@ -111,7 +111,9 @@ Error rate will vary widely depending on how you set the following parameters, s
 ## TODO
 - [X] Refactor functions for API and toolkit support
 - [ ] "Sync" datasets with the metadata file if audio clips are deleted after being generated
-- [ ] Add a step in the audio refinement processs to remove emotional speech
+- [ ] Add a step in the audio refinement processs to remove emotional speech (in progresss)
+- [ ] Create a model to remove non-speech utterences and portions with background music (in progresss)
+- [ ] Update code documentation
 - [ ] Add other normalization methods for audio
 - [ ] Add other dataset formats for generation
 - [ ] Utilize TTS models to automatically generate datasets, with audio augmentation to create diversity
