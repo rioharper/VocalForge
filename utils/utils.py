@@ -187,7 +187,7 @@ def concentrate_timestamps(list:list, min_duration) -> list:
     return destination
 
 
-def remove_short_timestamps(list):
+def remove_short_timestamps(list, min_duration):
     """
     Removes timestamps that are too short from a list of timestamps.
 
@@ -200,7 +200,7 @@ def remove_short_timestamps(list):
     """
     nlist = []
     for stamps in list:
-            if stamps[1] - stamps[0] > 1:
+            if stamps[1] - stamps[0] > min_duration:
                 nlist.append([stamps[0], stamps[1]])
     return nlist
 

@@ -356,47 +356,43 @@ class IsolateSpeaker():
             timestamps[speaker].append([speech_turn.start, speech_turn.end])
 
         for index, speaker in enumerate(timestamps):
-            timestamps[index] = remove_short_timestamps(speaker)
-
+            timestamps[index] = remove_short_timestamps(speaker, 1)
         return timestamps
 
             
-    def seperate_speakers(self) -> None:
+    def separate_speakers(self):
         """
-        Given a list of speakers' tracks, this function separates individual 
-        speakers and saves their speech parts to a directory.
-
-        Parameters:
-        speakers (list): list of tracks of multiple speakers
-        
-        Returns:
-        None
+        Separates individual speakers from a list of speakers' tracks and saves their speech parts to a directory.
         """
-        
         import os
+        
         input_files = self.Input_Files
-        for fileindex, tracks in enumerate(self.Speakers, -1):
+        
+        for file_index, tracks in enumerate(self.Speakers):
+            # Determine the number of speakers in the track and the timestamps of their speech parts
             speakers = self.find_number_speakers(tracks)
             speaker_timestamps = self.find_speakers_timestamps(tracks, speakers)
-            for index, timestamps in enumerate(speaker_timestamps):
-                raw_data = AudioSegment.from_file(os.path.join(self.Input_Dir,
-                                                                input_files[fileindex]),
-                                                                format="wav")
-                entry = AudioSegment.empty()
+            
+            # Load the audio file and extract the speech parts for each speaker
+            audio_data = AudioSegment.from_file(os.path.join(self.Input_Dir, input_files[file_index]), format="wav")
+            for speaker_index, timestamps in enumerate(speaker_timestamps):
+                speaker_data = AudioSegment.empty()
                 for start, stop in timestamps:
-                    entry += raw_data[start * 1000: stop * 1000]
-                foldername = input_files[fileindex].split(".")[0]
-                dir = os.path.join(self.Verification_Dir, foldername)
-                if os.path.exists(dir) == False:
-                    os.mkdir(dir)
-                fentry = entry.export(os.path.join(self.Verification_Dir, foldername,
-                                                    speakers[index]+".wav"),
-                                                    format="wav")
+                    speaker_data += audio_data[start * 1000: stop * 1000]
+                
+                # Create a directory for the speaker's audio file and save it
+                folder_name = os.path.splitext(input_files[file_index])[0]
+                speaker_dir = os.path.join(self.Verification_Dir, folder_name)
+                if not os.path.exists(speaker_dir):
+                    os.mkdir(speaker_dir)
+                speaker_file = os.path.join(speaker_dir, f"{speakers[speaker_index]}.wav")
+                speaker_data.export(speaker_file, format="wav")
+
 
     def run_seperate_speakers(self):        
         if os.listdir(self.Verification_Dir) == []:
             self.find_speakers()
-            self.seperate_speakers()
+            self.separate_speakers()
         else: print("Speaker(s) have already been split! Skipping...")
 
     def create_fingerprint(self, file_dir):
@@ -405,10 +401,14 @@ class IsolateSpeaker():
         )
     
     def verify_file(self, file_dir):
-        file_fingerprint = self.Inference(file_dir)
-        difference = 1 - spatial.distance.cosine(file_fingerprint, self.Speaker_Fingerprint)
-        if difference > self.Verification_Threshold:
-            return file_dir
+        print(file_dir)
+        if os.stat(file_dir).st_size > 100:
+            file_fingerprint = self.Inference(file_dir)
+            difference = 1 - spatial.distance.cosine(file_fingerprint, self.Speaker_Fingerprint)
+            print(difference)
+            if difference > self.Verification_Threshold:
+                return file_dir
+            else: return None
         else: return None
 
     def verify_folder(self, folder_dir):
@@ -623,7 +623,7 @@ parser.add_argument("--playlist_url",
     type=str)
 parser.add_argument("--vad_threshold",
     help="The higher the value, the more selective the VAD model will be (float, default: .75)",
-    default=.75, type=int)
+    default=.75, type=float)
 parser.add_argument("--snr_change", 
     help="The lower the value, the more sensitive the model is to changes in SNR, such as laughter or loud noises (float, default: 0.75)", 
     default=0.75, type=float)
