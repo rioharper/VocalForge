@@ -1,6 +1,6 @@
 import os
 from pydub import AudioSegment
-from utils.utils import get_files, concentrate_timestamps, remove_short_timestamps, download_videos, create_core_folders, create_samples
+from VocalForge.utils.utils import get_files, concentrate_timestamps, remove_short_timestamps, download_videos, create_core_folders, create_samples
 import shutil
 from scipy.io import wavfile
 import numpy as np
@@ -249,7 +249,7 @@ class OverlapRemover:
             self.analyze_overlap()
             self.overlap_timestamps()
             self.export_no_overlap()
-            print("exported non overlapped files!")
+            print("Exported non overlapped files!")
         else: print(f"Files already exist in {self.Output_Dir}")
 
 
@@ -401,11 +401,9 @@ class IsolateSpeaker():
         )
     
     def verify_file(self, file_dir):
-        print(file_dir)
         if os.stat(file_dir).st_size > 100:
             file_fingerprint = self.Inference(file_dir)
             difference = 1 - spatial.distance.cosine(file_fingerprint, self.Speaker_Fingerprint)
-            print(difference)
             if difference > self.Verification_Threshold:
                 return file_dir
             else: return None
@@ -515,7 +513,7 @@ class ExportAudio():
                 file_dir = os.path.join(folder_dir, file)
                 audio, _ = load_audio(file_dir, sr=df_state.sr())
                 enhanced = enhance(model, df_state, audio)
-                save_audio(os.path.join(self.Noise_Removed_Dir, file+'.wav'), enhanced, df_state.sr())
+                save_audio(os.path.join(self.Noise_Removed_Dir, file), enhanced, df_state.sr())
                 cuda.empty_cache()
             except RuntimeError:
                 print(f"file is too large for GPU, skipping: {file}")
@@ -549,12 +547,14 @@ class RefineAudio():
     def __init__(
         self,
         input_dir=None,
-        output_dir=None,
+        vad_dir=None,
+        overlap_dir=None,
         sample_dir=None,
         verification_dir=None,
         isolated_dir=None,
         noise_removed_dir=None,
         normalization_dir=None,
+        export_dir=None,
         sample_rate=None,
         vad_theshold=None,
         noise_aggressiveness=None,
@@ -562,38 +562,41 @@ class RefineAudio():
         speaker_id=None,
     ):
         self.Input_Dir = input_dir
-        self.Output_Dir = output_dir
-        self.VAD_Threshold = vad_theshold
-        self.Noise_Aggressiveness = noise_aggressiveness
+        self.VAD_dir = vad_dir
+        self.Overlap_Dir = overlap_dir
         self.Sample_Dir = sample_dir
         self.Verification_Dir = verification_dir
         self.Isolated_Dir = isolated_dir
+        self.Export_Audio_Dir = export_dir
+        self.VAD_Threshold = vad_theshold
+        self.Noise_Aggressiveness = noise_aggressiveness
         self.Verification_Threshold = verification_threshold
         self.Speaker_Id = speaker_id
         self.Noise_Removed_Dir = noise_removed_dir
         self.Normalized_Dir = normalization_dir
         self.Sample_Rate = sample_rate
+
         self.Non_Speech_Remover = NonSpeechRemover(
             vad_threshold=self.VAD_Threshold, 
             noise_aggressiveness=self.Noise_Aggressiveness,
             input_dir=self.Input_Dir,
-            output_dir=self.Output_Dir,
+            output_dir=self.VAD_dir,
             sample_dir=self.Sample_Dir,
         )
         self.Overlap_Remover = OverlapRemover(
-            self.Input_Dir,
-            self.Output_Dir,    
+            input_dir=self.VAD_dir,
+            output_dir=self.Overlap_Dir,
         )
         self.Isolate_Speaker = IsolateSpeaker(
-            input_dir=self.Input_Dir,
+            input_dir=self.Overlap_Dir,
             verification_dir=self.Verification_Dir,
             isolated_speaker_dir=self.Isolated_Dir,
             verification_threshold=self.Verification_Threshold,
             speaker_id=self.Speaker_Id,
         )
         self.Export_Audio = ExportAudio(
-            input_dir=self.Input_Dir,
-            export_dir=self.Output_Dir,
+            input_dir=self.Isolated_Dir,
+            export_dir=self.Export_Audio_Dir,
             noise_removed_dir=self.Noise_Removed_Dir,
             normalization_dir=self.Normalized_Dir,
             sample_rate=self.Sample_Rate,
