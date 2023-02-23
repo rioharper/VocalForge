@@ -623,7 +623,7 @@ parser.add_argument("--playlist_url",
     type=str)
 parser.add_argument("--vad_threshold",
     help="The higher the value, the more selective the VAD model will be (float, default: .75)",
-    default=.75, type=int)
+    default=.75, type=float)
 parser.add_argument("--snr_change", 
     help="The lower the value, the more sensitive the model is to changes in SNR, such as laughter or loud noises (float, default: 0.75)", 
     default=0.75, type=float)
