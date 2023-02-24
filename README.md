@@ -5,6 +5,7 @@
 Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github.com/pyannote/pyannote-audio), [CTC segmentation](https://github.com/lumaku/ctc-segmentation) , [OpenAI's Whisper](https://github.com/openai/whisper), this repo will take you from raw audio to a fully formatted dataset, refining both the audio and text automatically.
 
 *NOTE: While this does reduce time on spent on dataset curation, verifying the output at each step is important as it isn't perfect*
+
 *this project is very much in the development stage, so bare that in mind as frequent updates may have bugs or not work for already written code*
 
 ![a flow chart of how this repo works](https://github.com/rioharper/VocalForge/blob/main/media/join_processes.svg?raw=true)
