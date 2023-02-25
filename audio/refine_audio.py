@@ -17,7 +17,7 @@ class RefineAudio():
         export_dir=None,
         sample_rate=None,
         vad_theshold=None,
-        noise_aggressiveness=None,
+        snr_change=None,
         verification_threshold=None,
         speaker_id=None,
     ):
@@ -29,7 +29,7 @@ class RefineAudio():
         self.Isolated_Dir = isolated_dir
         self.Export_Audio_Dir = export_dir
         self.VAD_Threshold = vad_theshold
-        self.Noise_Aggressiveness = noise_aggressiveness
+        self.SNR_Change = snr_change
         self.Verification_Threshold = verification_threshold
         self.Speaker_Id = speaker_id
         self.Noise_Removed_Dir = noise_removed_dir
@@ -38,7 +38,7 @@ class RefineAudio():
 
         self.VoiceDetection = VoiceDetection(
             vad_threshold=self.VAD_Threshold, 
-            noise_aggressiveness=self.Noise_Aggressiveness,
+            snr_change=self.SNR_Change,
             input_dir=self.Input_Dir,
             output_dir=self.VAD_dir,
             sample_dir=self.Sample_Dir,

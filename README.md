@@ -1,17 +1,19 @@
 # An End-to-End Toolkit for Voice Datasets
 
-`vocal-forge` is an open-source toolkit written in Python 🐍  that is meant to cut down the time to create datasets for, TTS models, hotword detection models, and more so you can spend more time training, and less time sifting through audio data.
+`VocalForge` is an open-source toolkit written in Python 🐍  that is meant to cut down the time to create datasets for, TTS models, hotword detection models, and more so you can spend more time training, and less time sifting through audio data.
 
 Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github.com/pyannote/pyannote-audio), [CTC segmentation](https://github.com/lumaku/ctc-segmentation) , [OpenAI's Whisper](https://github.com/openai/whisper), this repo will take you from raw audio to a fully formatted dataset, refining both the audio and text automatically.
 
 *NOTE: While this does reduce time on spent on dataset curation, verifying the output at each step is important as it isn't perfect*
+
+*this is a very much an experimental release, so bugs and updates will be frequent*
 
 ![a flow chart of how this repo works](https://github.com/rioharper/VocalForge/blob/main/media/join_processes.svg?raw=true)
 
 
 ## Features:
 
-#### `refineaudio.py`
+#### `audio_demo.py`
 - ⬇️ **Download audio**  from a YouTube playlist (perfect for podcasts/interviews) OR input your own raw audio files (wav format)
 - 🎵 **Remove Non Speech Data**
 - 🗣🗣 **Remove Overlapping Speech** 
@@ -21,7 +23,7 @@ Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github
 - 🧮 **Normalize Audio**
 - ➡️ **Export with user defined parameters**
 
-#### `generate_dataset.py`
+#### `text_demo.py`
 - 📜 **Batch transcribe text using OpenAI's Whisper**
 - 🧮 **Run [text normalization](https://docs.nvidia.com/deeplearning/nemo/user-guide/docs/en/stable/nlp/text_normalization/wfst/wfst_text_normalization.html)**
 - 🫶 **Use CTC segmentation to line up text to audio**
@@ -43,9 +45,9 @@ a [Hugging Face account](https://huggingface.co/) is required (it's free and sup
 #install system libraries
 apt-get update && apt-get install -y libsndfile1 ffmpeg
 
-conda create -n vocal-forge python=3.8 pytorch=1.11.0 torchvision=0.12.0 torchaudio=0.11.0 cudatoolkit=11.3.1 -c pytorch
+conda create -n VocalForge python=3.8 pytorch=1.11.0 torchvision=0.12.0 torchaudio=0.11.0 cudatoolkit=11.3.1 -c pytorch
 
-conda activate vocal-forge
+conda activate VocalForge
 git clone https://github.com/rioharper/VocalForge
 cd VocalForge
 pip install -r requirements.txt
@@ -63,6 +65,17 @@ Pyannote models need to be "signed up for" in Hugging Face for research purposes
 - [Embedding](https://huggingface.co/pyannote/embedding)
 - [Segmentation](https://huggingface.co/pyannote/segmentation)
 
+## API Example
+```
+from VocalForge.audio import RefineAudio
+
+refine = RefineAudio(
+	input_dir='raw_audio', 
+	vad_dir='vad', 
+	vad_theshold=0.9
+)
+refine.VoiceDetection.analyze_vad()
+```
 
 ## Parameters
 Error rate will vary widely depending on how you set the following parameters, so make sure to play around with them! Each dataset is it's own snowflake.
