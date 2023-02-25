@@ -67,7 +67,7 @@ Pyannote models need to be "signed up for" in Hugging Face for research purposes
 ## Parameters
 Error rate will vary widely depending on how you set the following parameters, so make sure to play around with them! Each dataset is it's own snowflake.
 
-##### `refineaudio.py --help`
+##### `audio_demo.py --help`
 ```
 --raw_dir directory for unfitered audio (str, required)
 
@@ -86,7 +86,7 @@ Error rate will vary widely depending on how you set the following parameters, s
 --sample_length create sample voice clips from raw_dir for testing purposes (in seconds)
 ```
 
-##### `generate_dataset.py --help`
+##### `text_demo.py --help`
 ```
 --raw_dir directory for audio (str, required)
 
