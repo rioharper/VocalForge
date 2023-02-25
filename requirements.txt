@@ -2,7 +2,9 @@ crepe==0.0.13
 ctc_segmentation==1.7.4
 joblib==1.2.0
 natsort==8.2.0
-nemo_toolkit['all']
+nemo==4.4.1
+nemo_text_processing==0.1.5rc0
+nemo_toolkit==1.14.0
 num2words==0.5.12
 numpy==1.23.5
 openai_whisper==20230124
@@ -15,4 +17,4 @@ torch==1.13.1
 tqdm==4.64.1
 whisper==1.1.10
 yt_dlp==2023.1.6
-https://github.com/marianne-m/brouhaha-vad/archive/main.zip
+brouhaha-vad @ https://github.com/marianne-m/brouhaha-vad/archive/main.zip

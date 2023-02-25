@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["dependencies"]
+name = "VocalForge"
+version = "0.0.1"
+authors = [
+  { name="Rio Harper", email="rio@rioharper.com" },
+]
+description = "Your one-stop solution for voice dataset creation"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Environment :: GPU :: NVIDIA CUDA :: 11.3"
+]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.urls]
+"Homepage" = "https://github.com/rioharper/VocalForge/"
+"Bug Tracker" = "https://github.com/rioharper/VocalForge/issues"
+
