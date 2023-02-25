@@ -50,6 +50,14 @@ if args.samples_length is not None:
     rawdir = os.path.join(args.work_dir, 'Samples')
     
 Refine_Audio = RefineAudio(
+    input_dir=args.raw_dir,
+    vad_dir=os.path.join(args.work_dir, 'Only_Voice'),
+    overlap_dir=os.path.join(args.work_dir, 'No_Overlap'),
+    verification_dir=os.path.join(args.work_dir, 'Verification'),
+    isolated_dir=os.path.join(args.work_dir, 'Isolated'),
+    export_dir=os.path.join(args.work_dir, 'Exported'),
+    normalized_dir=os.path.join(args.work_dir, 'Normalized'),
+    noise_removed_dir=os.path.join(args.work_dir, 'Noise_Removed'),
     sample_rate=args.sample_rate,
     vad_theshold=args.vad_threshold,
     noise_aggressiveness=args.snr_change,
