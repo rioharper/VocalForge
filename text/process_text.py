@@ -3,7 +3,7 @@ import regex
 import os
 from nemo_text_processing.text_normalization.normalize import Normalizer
 from num2words import num2words
-from VocalForge.utils.text.normalization_helpers import RU_ABBREVIATIONS, LATIN_TO_RU
+from .normalization_helpers import RU_ABBREVIATIONS, LATIN_TO_RU
 
 def get_unicode(language):
     lower_case_unicode = ''
