@@ -73,10 +73,10 @@ class VoiceDetection:
                 if vad < self.Vad_Threshold and startpoint == False:
                     nonspeech_timestamps.append([t])
                     startpoint = True
-                elif c50_med * self.Noise_Aggressiveness > c50 and startpoint == False:
+                elif c50_med * self.SNR_Change > c50 and startpoint == False:
                     nonspeech_timestamps.append([t])
                     startpoint = True
-                elif c50_med * self.Noise_Aggressiveness < c50 and startpoint == True and vad > self.Vad_Threshold:
+                elif c50_med * self.SNR_Change < c50 and startpoint == True and vad > self.Vad_Threshold:
                     nonspeech_timestamps[len(nonspeech_timestamps)-1].append(t)
                     startpoint = False
             if len(nonspeech_timestamps[len(nonspeech_timestamps)-1]) == 1:

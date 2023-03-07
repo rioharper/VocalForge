@@ -11,6 +11,7 @@ class ExportAudio():
         self.Noise_Removed_Dir = noise_removed_dir 
         self.Input_Files = get_files(self.Input_Dir)
         self.Sample_Rate = sample_rate
+        self.Normalized_Dir = normalization_dir
     
     
 
