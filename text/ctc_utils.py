@@ -451,7 +451,7 @@ def get_segments(
 
 
 
-def process_alignment(alignment_file: str, clips_dir: str, offset, max_duration, threshold):
+def process_alignment(alignment_file: str, clips_dir: str, max_duration, threshold, offset=0, padding=0):
     """ Cut original audio file into audio segments based on alignment_file
     Args:
         alignment_file: path to the file with segmented text and corresponding time stamps.
@@ -474,7 +474,8 @@ def process_alignment(alignment_file: str, clips_dir: str, offset, max_duration,
                 audio_file = line[0].strip()
                 continue
             line = line[0].split()
-            segments.append((float(line[0]) + offset / 1000, float(line[1]) + offset / 1000, float(line[2])))
+            segment = [float(line[0]) + float(offset) + padding, float(line[1]) + float(offset) - padding]
+            segments.append((float(line[0]) + float(offset) + padding, float(line[1]) + float(offset) - padding, float(line[2])))
 
     # cut the audio into segments and save the final manifests at output_dir
     sampling_rate, signal = wav.read(audio_file)

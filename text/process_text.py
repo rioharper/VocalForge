@@ -77,7 +77,7 @@ def format_text(text_file: str, language: str) -> str:
 
 
 def split_text(transcript: str, language: str, vocabulary: list, 
-               max_length: int, additional_split_symbols:str =None) -> list:
+               max_length: int, additional_split_symbols:str =None, min_length=0) -> list:
     """
     Split the given text into smaller segments.
 
@@ -183,8 +183,8 @@ def split_text(transcript: str, language: str, vocabulary: list,
         sent = sentences[0].split()
         sentences = []
         for i in range(0, len(sent), max_length):
-            sentences.append("".join(sent[i : i + max_length]))
-    sentences = [s.strip() for s in sentences if s.strip()]
+            sentences.append("".join(sent[i: i + max_length]))
+    sentences = [s.strip() for s in sentences if s.strip() and len(s.split()) >= min_length]
     return sentences
 
 def normalize_text(sentences, language, vocabulary, n_jobs=1, batch_size=100):

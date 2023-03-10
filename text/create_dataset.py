@@ -82,7 +82,9 @@ class GenerateDataset():
             pass
         metadata.to_csv(os.path.join(self.Out_Dir, "metadata.csv"),
                         index=False, header=False, sep='|')
+        
         for folder in get_files(self.Sliced_Aud_Dir):
+            #TODO: check if file is entered on metadata.csv, currently copies regardless of validity
             aud_clips_dir = os.path.join(self.Sliced_Aud_Dir, folder)
             destination = shutil.copytree(aud_clips_dir, wav_dir, dirs_exist_ok=True)
     
@@ -95,4 +97,5 @@ class GenerateDataset():
             self.Dataset.append(self.create_metadata(file_dir, self.Threshold))
         metadata = pd.concat(self.Dataset)
         self.create_dataset(metadata)
+        self.Dataset = []
         print("Dataset has been created!")

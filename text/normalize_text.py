@@ -22,10 +22,12 @@ class NormalizeText():
         audio_dir: str, 
         model='nvidia/stt_en_citrinet_1024_gamma_0_25', 
         length=25, 
-        lang='en'
+        lang='en',
+        min_length=0
     ):
         self.Model = model
         self.Length = length
+        self.Min_Length = min_length
         self.Lang = lang
         self.Input_Dir = input_dir
         self.Out_Dir = out_dir
@@ -71,7 +73,8 @@ class NormalizeText():
             lang, 
             cfg.decoder.vocabulary, 
             self.Length, 
-            additional_split_symbols=None
+            additional_split_symbols=None,
+            min_length=self.Min_Length
         )
         return normalize_text(sentences, lang, cfg.decoder.vocabulary)
 
