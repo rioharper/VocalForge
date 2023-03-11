@@ -77,9 +77,9 @@ class ExportAudio():
         for file in get_files(input_folder_dir, '.wav'):
             try:
                 file_dir = os.path.join(input_folder_dir, file)
-                audio, _ = load_audio(file_dir, sr=df_state.sr())
+                audio, _ = load_audio(file_dir, sr=self.Sample_Rate)
                 enhanced = enhance(model, df_state, audio)
-                save_audio(os.path.join(self.Noise_Removed_Dir, file), enhanced, df_state.sr())
+                save_audio(os.path.join(self.Noise_Removed_Dir, file), enhanced, sr=self.Sample_Rate)
                 cuda.empty_cache()
             except RuntimeError:
                 print(f"file is too large for GPU, skipping: {file}")

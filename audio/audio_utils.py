@@ -30,6 +30,24 @@ def download_videos(playlist_url: str, out_dir):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         error_code = ydl.download(playlist_url)
 
+    #split if audio is above 1 hour
+    for filename in os.listdir(out_dir):
+        file = AudioSegment.from_file(out_dir + '/' + filename)
+        if len(file) > 3500000:
+            slices = file[::3500000]
+            for index, slice in enumerate(slices):
+                slice.export(os.path.join(out_dir, f'{filename}_{index}.wav'), format='wav')
+            os.remove(out_dir + '/' + filename)
+
+    for filename in os.listdir(out_dir):
+        file_stat = os.stat(os.path.join(out_dir, filename))
+        if file_stat.st_size > 500000000:
+            file = AudioSegment.from_file(out_dir + '/' + filename)
+            slices = file[::int((file.duration_seconds*1000)/2)]
+            for index, slice in enumerate(slices):
+                slice.export(os.path.join(out_dir, f'{filename}_{index}.wav'), format='wav')
+            os.remove(out_dir + '/' + filename)
+
     for count, filename in enumerate(os.listdir(out_dir)):
             dst = f"DATA{str(count)}.wav"
             src =f"{out_dir}/{filename}"
