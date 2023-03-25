@@ -13,7 +13,8 @@ pyannote.core==4.5
 pydub==0.25.1
 regex==2022.10.31
 scipy==1.10.0
-torch==1.13.1
+torch
+torchvision
 tqdm==4.64.1
 whisper==1.1.10
 yt_dlp==2023.1.6
