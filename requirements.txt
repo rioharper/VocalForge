@@ -17,4 +17,4 @@ torch==1.13.1
 tqdm==4.64.1
 whisper==1.1.10
 yt_dlp==2023.1.6
-brouhaha-vad @ https://github.com/marianne-m/brouhaha-vad/archive/main.zip
+brouhaha @ https://github.com/marianne-m/brouhaha-vad/archive/main.zip
