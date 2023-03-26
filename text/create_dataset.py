@@ -81,7 +81,7 @@ class GenerateDataset():
         except:
             pass
         metadata.to_csv(os.path.join(self.Out_Dir, "metadata.csv"),
-                        index=False, header=False, sep='|')
+                        index=False, header=False, sep='|', encoding='utf-8-sig')
         
         for folder in get_files(self.Sliced_Aud_Dir):
             #TODO: check if file is entered on metadata.csv, currently copies regardless of validity

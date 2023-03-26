@@ -36,7 +36,7 @@ def format_text(text_file: str, language: str) -> str:
     :param language: str: language code for the text file. (Currently supported 'ru', 'en')
     :return: str: Formatted text string
     """
-    with open(text_file, "r", encoding='UTF-8') as f:
+    with open(text_file, "r", encoding='utf-8') as f:
         transcript = f.read()
 
     print(f"Splitting text in {text_file} into sentences.")

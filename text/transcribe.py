@@ -51,7 +51,7 @@ class Transcribe():
             #     print("file corrupted! skipping...")
     
     def write_transcription(self, result, text_file_dir):
-        with open(text_file_dir, 'w', encoding="UTF-8") as f:
+        with open(text_file_dir, 'w', encoding="utf-8") as f:
             f.write(result['text'].strip())
 
     # transcribe all audio files in the `aud_dir` folder
