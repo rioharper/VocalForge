@@ -1,22 +1,19 @@
 from pydub import AudioSegment
 import os
+import yt_dlp
+import natsort
 
-def download_videos(playlist_url: str, out_dir):
-    '''This function downloads videos from a YouTube playlist URL using the 
-       "yt_dlp" library and saves them in the .wav format. 
+def download_videos(playlist_url: str, out_dir: str):
+    '''This function downloads audio from a youtube playlist and saves it to disk in the .wav format. 
+       If the audio is longer than 1 hour, it is split into smaller clips and saved to disk. 
 
         Inputs:
-        - playlist_url: a string representing the URL of the YouTube playlist
-        - out_dir: the directory for audio to be downloaded (not needed if using toolkit)
+        - playlist_url: a string representing the url of the youtube playlist.
+        - out_dir: a string representing the directory path to save the downloaded audio.
         
         Outputs:
-        - None, but audio files are saved to disk in the .wav format.
-        
-        Dependencies:
-        - "yt_dlp" library
-        - "os" library'''
-
-    import yt_dlp
+        - None, but audio clips are saved to disk in the .wav format.
+    '''
 
     ydl_opts = {
         'format': 'wav/bestaudio/best',
@@ -24,7 +21,7 @@ def download_videos(playlist_url: str, out_dir):
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'wav',
         }],
-        'outtmpl':out_dir + '/%(title)s.%(ext)s',
+        'outtmpl': os.path.join(out_dir, '%(title)s.%(ext)s'),
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -32,27 +29,28 @@ def download_videos(playlist_url: str, out_dir):
 
     #split if audio is above 1 hour
     for filename in os.listdir(out_dir):
-        file = AudioSegment.from_file(out_dir + '/' + filename)
+        file = AudioSegment.from_file(os.path.join(out_dir, filename))
         if len(file) > 3500000:
             slices = file[::3500000]
             for index, slice in enumerate(slices):
-                slice.export(os.path.join(out_dir, f'{filename}_{index}.wav'), format='wav')
-            os.remove(out_dir + '/' + filename)
+                slice.export(os.path.join(out_dir, f'{os.path.splitext(filename)[0]}_{index}.wav'), format='wav')
+            os.remove(os.path.join(out_dir, filename))
 
     for filename in os.listdir(out_dir):
         file_stat = os.stat(os.path.join(out_dir, filename))
         if file_stat.st_size > 500000000:
-            file = AudioSegment.from_file(out_dir + '/' + filename)
+            file = AudioSegment.from_file(os.path.join(out_dir, filename))
             slices = file[::int((file.duration_seconds*1000)/2)]
             for index, slice in enumerate(slices):
-                slice.export(os.path.join(out_dir, f'{filename}_{index}.wav'), format='wav')
-            os.remove(out_dir + '/' + filename)
+                slice.export(os.path.join(out_dir, f'{os.path.splitext(filename)[0]}_{index}.wav'), format='wav')
+            os.remove(os.path.join(out_dir, filename))
 
     for count, filename in enumerate(os.listdir(out_dir)):
-            dst = f"DATA{str(count)}.wav"
-            src =f"{out_dir}/{filename}"
-            dst =f"{out_dir}/{dst}"
-            os.rename(src, dst)
+        dst = f"DATA{count}.wav"
+        src = os.path.join(out_dir, filename)
+        dst = os.path.join(out_dir, dst)
+        os.rename(src, dst)
+
 
 def split_files(folder: str, dir: str, duration: int):
     '''This function splits audio files in the .wav format located in the
@@ -66,51 +64,68 @@ def split_files(folder: str, dir: str, duration: int):
         Outputs:
         - None, but audio clips are saved to disk in the .wav format.
         
-        Dependencies:
-        - "os" library
-        - "pydub" library and its component "AudioSegment"'''
-        
+    '''
+
     folder_dir = os.path.join(dir, folder)
-    for file in get_files(folder_dir):
-        file_dir = os.path.join(dir, folder_dir, file)
+    for file in get_files(folder_dir, ext=".wav"):
+        file_dir = os.path.join(folder_dir, file)
         print(file_dir)
         raw = AudioSegment.from_file(file_dir, format="wav")
-        raw = raw[::duration]
-        for index, clip in raw:
-            clip_dir = os.path.join(folder_dir, file.split(".")[0], file.split(".")[0]+str(index)+".wav")
-            clip = clip.export(clip_dir, format="wav")
+        for index, clip in enumerate(raw[::duration]):
+            clip_dir = os.path.join(folder_dir, file.split(".")[0], f"{file.split('.')[0]}_{index}.wav")
+            clip.export(clip_dir, format="wav")
 
-def get_files(dir:str, ext=None) -> list:
-    '''This function returns a list of files in a specified directory with a specified file extension. 
+def get_files(dir: str, full_dir: bool = False, ext: str = None) -> list:
+    """
+    Retrieves a list of files in a directory, sorted in natural order.
 
-    Inputs:
-    - dir: a string representing the directory path containing the files.
-    - ext (optional): a string representing the file extension to filter the files. 
-      If not specified, all files will be returned.
-    
-    Outputs:
-    - A list of sorted filenames.
-    
-    Dependencies:
-    - "os" library
-    - "natsort" library'''
+    Parameters:
+        dir (str): A string representing the directory path to search for files.
+        full_dir (bool): A boolean indicating whether to return the full directory path or just the file name. Default is False.
+        ext (str): A string representing the file extension to filter by. If None, all files are returned. Default is None.
 
-    import natsort
+    Returns:
+        files (list): A list of file names sorted in natural order.
+
+    Example:
+        get_files('/home/user/documents', True, '.txt')
+        Returns:
+        ['/home/user/documents/file1.txt', '/home/user/documents/file2.txt']
+    """
     files = []
     for file in os.listdir(dir):
-        if ext!=None:
+        if ext is not None:
             if file.endswith(ext):
-                files.append(file)
-        else: files.append(file)
+                if full_dir:
+                    files.append(os.path.join(dir, file))
+                else:
+                    files.append(file)
+        else:
+            files.append(file)
     files = natsort.natsorted(files)
     return files
 
 
 def create_core_folders(folders: list, workdir: str):
+    """
+    This function creates a list of folders in a specified directory if they do not already exist.
+
+    Parameters:
+        folders (list): A list of folder names to be created.
+        workdir (str): A string representing the directory path where the folders will be created.
+
+    Returns:
+        None
+
+    Example:
+        create_core_folders(['raw', 'processed'], '/home/user/documents')
+        Creates the folders 'raw' and 'processed' in the directory '/home/user/documents'.
+    """
     for folder in folders:
         folderdir = os.path.join(workdir, folder)
-        if os.path.exists(folderdir) == False:
+        if not os.path.exists(folderdir):
             os.makedirs(folderdir)
+
 
 def get_length(list):
     """
@@ -133,53 +148,77 @@ def get_length(list):
     return duration
 
 
-def create_samples(length:int, input_dir, output_dir):    
+def create_samples(length:int, input_dir:str, output_dir:str) -> None:
     '''This function creates audio samples of a specified length from audio files
        in the .wav format located in a specified raw directory.
 
-        Inputs:
-        - length: an integer representing the length in seconds of the samples to be created.
-        - input_dir: folder where raw wav files are located (for direct method calling)
-        - samples_dir: location for output sample wav files (for direct method calling)
-        
-        Outputs:
-        - None, but audio samples are saved to disk in the .wav format.
-        
-        Dependencies:
-        - "os" library
-        - "pydub" library and its component "AudioSegment"'''
+    Parameters:
+        length (int): An integer representing the length in seconds of the samples to be created.
+        input_dir (str): A string representing the folder where raw wav files are located.
+        output_dir (str): A string representing the location for output sample wav files.
+
+    Returns:
+        None, but audio samples are saved to disk in the .wav format.
+
+    Example:
+        create_samples(5, '/home/user/documents/raw', '/home/user/documents/samples')
+        Creates audio samples of 5 seconds from audio files in the .wav format located in the
+        '/home/user/documents/raw' directory and saves them to the '/home/user/documents/samples'
+        directory.
+    '''
+
+    # Get a list of all .wav files in the input directory
     rawfiles = get_files(input_dir, ".wav")
+
+    # Iterate through each .wav file and create a sample of the specified length
     for file in rawfiles:
-        raw_data = AudioSegment.from_file(input_dir+"/"+file, format="wav")
-        entry = AudioSegment.empty()
-        entry+=raw_data[:length *1000]
-        nfilename =  os.path.join(output_dir, file)
-        entry = entry.export(nfilename, format="wav")
+        raw_data = AudioSegment.from_file(os.path.join(input_dir, file), format="wav")
+        entry = raw_data[:length * 1000]
+        nfilename = os.path.join(output_dir, file)
+        entry.export(nfilename, format="wav")
 
 
-def concentrate_timestamps(list:list, min_duration) -> list:
+from typing import List, Tuple
+
+
+def remove_short_timestamps(timestamps: List[Tuple[int, int]], min_duration: int) -> List[Tuple[int, int]]:
+    """
+    Removes timestamps that are too short from a list of timestamps.
+
+    Parameters:
+    timestamps (List[Tuple[int, int]]): List of timestamps. Each timestamp is a tuple containing
+                 the start and end time of a period.
+    min_duration (int): The minimum duration in seconds for a timestamp to be included in the output.
+
+    Returns:
+    List[Tuple[int, int]]: List of timestamps with short timestamps removed.
+    """
+    return [(start, end) for start, end in timestamps if end - start > min_duration]
+
+
+def concentrate_timestamps(timestamps: List[Tuple[int, int]], min_duration: int) -> List[Tuple[int, int]]:
     '''This function takes in a list of timestamps and returns a condensed list of
-       timestamps where timestamps are merged that are close to eachother.
+       timestamps where timestamps are merged that are close to each other.
 
         Inputs:
-        - list: a list of timestamp tuples or a list of single timestamps.
+        - timestamps: a list of timestamp tuples or a list of single timestamps.
         - min_duration: an integer representing the minimum duration between timestamps
           to be combined.
         
         Outputs:
         - A list of condensed timestamps where timestamps that are within
-          {min_duration} of eachother have been merged into a single entry.
-        
-        Dependencies:
-        - None'''
+          {min_duration} of each other have been merged into a single entry.
+    '''
 
     try:
-        destination = [list[0]] # start with one period already in the output
-    except: return list
-    for src in list[1:]: # skip the first period because it's already there
+        destination = [timestamps[0]] # start with one period already in the output
+    except:
+        return timestamps
+    for i, src in enumerate(timestamps[1:], start=1): # skip the first period because it's already there
         try:
             src_start, src_end = src
-        except: return destination
+        except:
+            return destination
         current = destination[-1]
         current_start, current_end = current
         if src_start - current_end < min_duration: 
@@ -187,21 +226,3 @@ def concentrate_timestamps(list:list, min_duration) -> list:
         else:
             destination.append(src)
     return destination
-
-
-def remove_short_timestamps(list, min_duration):
-    """
-    Removes timestamps that are too short from a list of timestamps.
-
-    Parameters:
-    list (list): List of timestamps. Each timestamp is a list containing
-                 the start and end time of a period.
-
-    Returns:
-    list: List of timestamps with short timestamps removed.
-    """
-    nlist = []
-    for stamps in list:
-            if stamps[1] - stamps[0] > min_duration:
-                nlist.append([stamps[0], stamps[1]])
-    return nlist
