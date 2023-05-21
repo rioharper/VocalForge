@@ -1,110 +1,145 @@
 from .audio_utils import get_files
+import os
+from typing import Union
 import numpy as np
 from scipy.io import wavfile
-import os
 from pydub import AudioSegment
-
-class ExportAudio():
-    def __init__(self, input_dir=None, export_dir=None, noise_removed_dir=None, normalization_dir = None, sample_rate=22050):
-        self.Input_Dir = input_dir
-        self.Export_Dir = export_dir
-        self.Noise_Removed_Dir = noise_removed_dir 
-        self.Input_Files = get_files(self.Input_Dir)
-        self.Sample_Rate = sample_rate
-        self.Normalized_Dir = normalization_dir
-    
-    
-
-    def find_all_mean_sd(self, folders_dir: str) -> tuple:
-        """
-        This function finds the mean and standard deviation of all wav files in the
-        given folder and its subfolders.
-        
-        Parameters:
-        folders_dir (str): The directory of the folder where all the wav files are.
-        
-        Returns:
-        Tuple[float, float]: The mean and standard deviation of all wav files.
-        """
-        mean = 0
-        sd = 0
-        count = 0
-        for folder in get_files(folders_dir):
-            for file in get_files(self.Input_Dir):
-                rate, data = wavfile.read(os.path.join(self.Input_Dir, file))
-                mean += np.mean(data)
-                sd += np.std(data)
-                count += 1
-        mean /= count
-        sd /= count
-        return mean, sd
+from torch import cuda
+from df.enhance import enhance, init_df, load_audio, save_audio
 
 
-    def normalize_folder(self, folder_dir, mean, sd):
-        import pathlib
-        """
-        TODO: Add other normalization methods
-        Normalizes audio files in `folder` directory.
+def normalize_audio(file_or_folder: Union[str, os.PathLike], mean=None, sd=None) -> None:
+    """
+    Normalizes audio files in `file_or_folder` directory or file.
 
-        Parameters:
-        folder (str): The directory containing the audio files.
-        mean (float): The mean value used for normalization.
-        sd (float): The standard deviation value used for normalization.
+    Parameters:
+    file_or_folder (str or os.PathLike): The directory or file containing the audio files.
+    mean (float): The mean value used for normalization. If None, the mean of all audio files will be used.
+    sd (float): The standard deviation value used for normalization. If None, the standard deviation of all audio files will be used.
 
-        Returns:
-        None
+    Returns:
+    None
+    """
+    if os.path.isdir(file_or_folder):
+        # Get all WAV files in the folder
+        wav_files = get_files(file_or_folder, '.wav', full_dir=True)
 
-        """
-        for file in get_files(folder_dir):
-            file_dir = os.path.join(folder_dir, file)
-            rate, data = wavfile.read(file_dir)
-            mean_subtracted = data - mean
-            eps = 2**-30
-            output = mean_subtracted / (sd + eps)
-            normalized_file_dir = os.path.join(self.Normalized_Dir, file)
-            wavfile.write(normalized_file_dir, rate, output)
+        # Calculate mean and standard deviation if not provided
+        if mean is None or sd is None:
+            data = []
+            for file in wav_files:
+                rate, d = wavfile.read(file)
+                data.append(d)
+            data = np.concatenate(data)
+            mean = np.mean(data)
+            sd = np.std(data)
 
-    def noise_remove_folder(self, input_folder_dir=None):
-        if input_folder_dir is None:
-            input_folder_dir = self.Input_Dir
-        elif input_folder_dir is None and self.Input_Dir is None:
-            raise ValueError("Please provide either the folder_dir or the Noise_Removed_Dir")
-        
-        from torch import cuda
-        from df.enhance import enhance, init_df, load_audio, save_audio
-        model, df_state, _ = init_df(config_allow_defaults=True)
-        
-        for file in get_files(input_folder_dir, '.wav'):
+        # Normalize each file
+        for file in wav_files:
+            rate, data = wavfile.read(file)
+            data = (data - mean) / sd
+            wavfile.write(file, rate, data)
+    else:
+        # Normalize the file
+        rate, data = wavfile.read(file_or_folder)
+        data = (data - mean) / sd
+        wavfile.write(file_or_folder, rate, data)
+
+
+def noise_remove(file_or_folder: Union[str, os.PathLike], sample_rate=22050) -> None:
+    """
+    Removes noise from audio files in `file_or_folder` directory or file.
+
+    Parameters:
+    file_or_folder (str or os.PathLike): The directory or file containing the audio files.
+    sample_rate (int): The sample rate of the audio files.
+
+    Returns:
+    None
+    """
+    model, df_state, _ = init_df(config_allow_defaults=True)
+
+    if os.path.isdir(file_or_folder):
+        for file in get_files(file_or_folder, '.wav'):
             try:
-                file_dir = os.path.join(input_folder_dir, file)
-                audio, _ = load_audio(file_dir, sr=self.Sample_Rate)
+                file_dir = os.path.join(file_or_folder, file)
+                audio, _ = load_audio(file_dir, sr=sample_rate)
                 enhanced = enhance(model, df_state, audio)
-                save_audio(os.path.join(self.Noise_Removed_Dir, file), enhanced, sr=self.Sample_Rate)
+                save_audio(file_dir, enhanced, sr=sample_rate)
                 cuda.empty_cache()
             except RuntimeError:
                 print(f"file is too large for GPU, skipping: {file}")
-        del model, df_state
-        
-         
+    else:
+        try:
+            audio, _ = load_audio(file_or_folder, sr=sample_rate)
+            enhanced = enhance(model, df_state, audio)
+            save_audio(file_or_folder, enhanced, sr=sample_rate)
+            cuda.empty_cache()
+        except RuntimeError:
+            print(f"file is too large for GPU, skipping: {file_or_folder}")
 
-    def format_audio_folder(self, folder_dir):
-        for file in get_files(folder_dir, '.wav'):
-            file_dir = os.path.join(folder_dir, file)
+    del model, df_state
+
+
+def format_audio(file_or_folder: Union[str, os.PathLike], export_dir: Union[str, os.PathLike], sample_rate=22050) -> None:
+    """
+    Formats audio files in `file_or_folder` directory or file and saves them to `export_dir`.
+
+    Parameters:
+    file_or_folder (str or os.PathLike): The directory or file containing the audio files.
+    export_dir (str or os.PathLike): The directory to save the formatted audio file(s).
+    sample_rate (int): The sample rate of the audio files.
+
+    Returns:
+    None
+    """
+    if os.path.isdir(file_or_folder):
+        for file in get_files(file_or_folder, '.wav'):
+            file_dir = os.path.join(file_or_folder, file)
             raw = AudioSegment.from_file(file_dir, format="wav")
             raw = raw.set_channels(1)
-            raw = raw.set_frame_rate(self.Sample_Rate)
-            raw.export(os.path.join(self.Export_Dir, file), format='wav')
-    
-    def run_export(self):
-        if os.listdir(self.Export_Dir) != []:
-            print("file(s) have already been formatted! Skipping...")
-        else: self.format_audio_folder(self.Input_Dir)            
+            raw = raw.set_frame_rate(sample_rate)
+            raw.export(os.path.join(export_dir, file), format='wav')
+    else:
+        raw = AudioSegment.from_file(file_or_folder, format="wav")
+        raw = raw.set_channels(1)
+        raw = raw.set_frame_rate(sample_rate)
+        raw.export(os.path.join(export_dir, os.path.basename(file_or_folder)), format='wav')
 
-        if self.Noise_Removed_Dir is not None and os.listdir(self.Noise_Removed_Dir)== []:
-            print("Removing Noise...") 
-            self.noise_remove_folder(self.Export_Dir)
 
-        if self.Normalized_Dir is not None and os.listdir(self.Normalized_Dir)== []:
-            mean, sd = self.find_all_mean_sd(self.Input_Dir)
-            print("Normalizing Audio...")
-            self.normalize_folder(self.Export_Dir, mean, sd)
+def process_audio(input_dir: Union[str, os.PathLike], 
+                  export_dir: Union[str, os.PathLike], 
+                  noise_removed_dir: Union[str, os.PathLike] = None, 
+                  normalization_dir: Union[str, os.PathLike] = None, 
+                  sample_rate=22050, 
+                  mean=None, sd=None) -> None:
+    """
+    Processes audio files in `input_dir` directory and saves them to `export_dir`.
+
+    Parameters:
+    input_dir (str or os.PathLike): The directory containing the input audio files.
+    export_dir (str or os.PathLike): The directory to save the formatted audio files.
+    noise_removed_dir (str or os.PathLike): The directory to save the noise-removed audio files. If None, noise removal is skipped.
+    normalization_dir (str or os.PathLike): The directory to save the normalized audio files. If None, normalization is skipped.
+    sample_rate (int): The sample rate of the audio files.
+    mean (float): The mean value used for normalization. If None, the mean of all audio files will be used.
+    sd (float): The standard deviation value used for normalization. If None, the standard deviation of all audio files will be used.
+
+    Returns:
+    None
+    """
+    if os.listdir(export_dir) != []:
+        print("file(s) have already been formatted! Skipping...")
+    else:
+        format_audio(input_dir, export_dir, sample_rate)
+
+    if noise_removed_dir is not None and os.listdir(noise_removed_dir) == []:
+        print("Removing Noise...")
+        noise_remove(export_dir, sample_rate)
+        export_dir = noise_removed_dir
+
+    if normalization_dir is not None and os.listdir(normalization_dir) == []:
+        print("Normalizing Audio...")
+        normalize_audio(export_dir, mean, sd)
+        export_dir = normalization_dir
+
