@@ -1,6 +1,7 @@
 from pydub import AudioSegment
 import os
 import natsort
+import pandas as pd
 
 def split_files(folder: str, dir: str, duration: int):
     '''This function splits audio files in the .wav format located in the
@@ -75,3 +76,66 @@ def create_core_folders(folders: list, workdir: str):
         folderdir = os.path.join(workdir, folder)
         if not os.path.exists(folderdir):
             os.makedirs(folderdir)
+
+
+def remove_small_files(dataset_dir: str):
+    """
+    This function removes audio files that are below 100kb in size from the specified directory and removes their corresponding entries in the metadata.csv file.
+
+    Parameters:
+        dataset_dir (str): A string representing the directory path containing the audio files and metadata.csv file. Must be in the LJSpeech format.
+
+    Returns:
+        None
+    """
+    bad_files = []
+    for file in os.listdir(dataset_dir+'/wavs/'):
+        #if file is below 100kb remove it and append it to the list
+        if os.stat(dataset_dir +'/wavs/'+file).st_size < 100000:
+            bad_files.append(file)
+
+    df = pd.read_csv(dataset_dir+'/metadata.csv', sep='|', on_bad_lines='skip')
+    for index, row in df.iterrows():
+        if row[0]+'.wav' in bad_files:
+            df.drop(index, inplace=True)
+            os.remove(dataset_dir + '/wavs/' + row[0]+'.wav')   
+            df.to_csv(dataset_dir+'/metadata.csv', sep='|', index=False)
+
+
+def remove_extra_audio_files(dataset_dir: str):
+    """
+    This function removes audio files that are not listed in the metadata.csv file from the specified directory and removes their corresponding entries in the metadata.csv file.
+
+    Parameters:
+        dataset_dir (str): A string representing the directory path containing the audio files and metadata.csv file. Must be in the LJSpeech format.
+
+    Returns:
+        None
+    """
+    df = pd.read_csv(dataset_dir+'/metadata.csv', sep='|', on_bad_lines='skip')
+    wav_files = os.listdir(dataset_dir + '/wavs/')
+    good_files = []
+    for index, row in df.iterrows():
+        good_files.append(row[0]+'.wav')
+
+    for file in wav_files:
+        if file not in good_files:
+            os.remove(dataset_dir + '/wavs/' + file)
+            print(file + ' removed')
+
+
+def remove_extra_metadata(dataset_dir: str):
+    """
+    This function removes entries in the metadata.csv file that do not have corresponding audio files in the specified directory.
+    
+    Parameters:
+        dataset_dir (str): A string representing the directory path containing the audio files and metadata.csv file. Must be in the LJSpeech format.
+    """
+    wav_files = os.listdir(dataset_dir + '/wavs/')
+    df = pd.read_csv(dataset_dir+'/metadata.csv', sep='|', on_bad_lines='skip')
+
+    for index, row in df.iterrows():
+        if row[0]+'.wav' not in wav_files:
+            df.drop(index, inplace=True)
+            print(row[0])
+    df.to_csv(dataset_dir+'/metadata.csv', sep='|', index=False)
