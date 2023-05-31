@@ -1,6 +1,6 @@
 from .voice_detection import VoiceDetection
 from .overlap import Overlap
-from .isolate import IsolateSpeaker
+from .isolate import Isolate
 from .export_audio import ExportAudio
 
 class RefineAudio():
@@ -47,7 +47,7 @@ class RefineAudio():
             input_dir=self.VAD_dir,
             output_dir=self.Overlap_Dir,
         )
-        self.Isolate_Speaker = IsolateSpeaker(
+        self.Isolate_Speaker = Isolate(
             input_dir=self.Overlap_Dir,
             verification_dir=self.Verification_Dir,
             isolated_speaker_dir=self.Isolated_Dir,
