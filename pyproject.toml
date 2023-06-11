@@ -1,27 +1,56 @@
+Author = "Rio Harper"
+License = "MIT"
+Home-page = "https://github.com/rioharper/VocalForge"
+
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["dependencies"]
 name = "VocalForge"
-version = "0.0.1"
+version = "0.0.5"
+
 authors = [
-  { name="Rio Harper", email="rio@rioharper.com" },
+  {email="rio@rioharper.com" },
 ]
 description = "Your one-stop solution for voice dataset creation"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "License :: OSI Approved :: MIT License",
-    "Operating System :: POSIX :: Linux",
     "Environment :: GPU :: NVIDIA CUDA :: 11.3"
 ]
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
 
-[project.urls]
-"Homepage" = "https://github.com/rioharper/VocalForge/"
-"Bug Tracker" = "https://github.com/rioharper/VocalForge/issues"
+dependencies = [
+    'joblib==1.2.0',
+    'natsort==8.2.0',
+    'numpy==1.23.2',
+    'pydub',
+    'pandas==1.4.3',
+    'regex==2022.10.31',
+    'scipy==1.10.1',
+    'tqdm==4.64.1'
+]
 
+[tool.setuptools]
+package-dir = {"" = "VocalForge"}
+
+[project.optional-dependencies]
+audio = [
+        'deepfilternet',
+        'pyannote.core',
+        'pyannote.audio'
+        ]
+
+text = [
+        'ctc_segmentation',
+        'nemo==4.5.5',
+        'nemo_text_processing',
+        'nemo_toolkit',
+        'num2words==0.5.12',
+        'openai_whisper',
+        'whisper',
+        'yt_dlp'
+]
