@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "VocalForge"
-version = "0.0.5"
+version = "0.0.6"
 
 authors = [
   {email="rio@rioharper.com" },
@@ -41,7 +41,8 @@ package-dir = {"" = "VocalForge"}
 audio = [
         'deepfilternet',
         'pyannote.core',
-        'pyannote.audio'
+        'pyannote.audio',
+        'yt_dlp',
         ]
 
 text = [
@@ -52,5 +53,4 @@ text = [
         'num2words==0.5.12',
         'openai_whisper',
         'whisper',
-        'yt_dlp'
 ]
