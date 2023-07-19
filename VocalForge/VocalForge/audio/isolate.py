@@ -108,31 +108,142 @@ class Isolate:
             timestamps[index] = remove_short_timestamps(speaker, 1)
         return timestamps
 
-            
-    def separate_speakers(self):
+    
+    def export_speakers(self):
         """
         Separates individual speakers from a list of speakers' tracks and saves their speech parts to a directory.
-        """
-        import os
-        
-        input_files = self.Input_Files
-        
+        """        
         for file_index, tracks in enumerate(self.Speakers):
             # Determine the number of speakers in the track and the timestamps of their speech parts
             speakers = self.find_number_speakers(tracks)
             speaker_timestamps = self.find_speakers_timestamps(tracks, speakers)
             
             # Load the audio file and extract the speech parts for each speaker
-            audio_data = AudioSegment.from_file(os.path.join(self.Input_Dir, input_files[file_index]), format="wav")
+            audio_data = AudioSegment.from_file(os.path.join(self.Input_Dir, self.Input_Files[file_index]), format="wav")
             for speaker_index, timestamps in enumerate(speaker_timestamps):
                 speaker_data = AudioSegment.empty()
                 for start, stop in timestamps:
                     speaker_data += audio_data[start * 1000: stop * 1000]
                 
                 # Create a directory for the speaker's audio file and save it
-                folder_name = os.path.splitext(input_files[file_index])[0]
+                folder_name = os.path.splitext(self.Input_Files[file_index])[0]
                 speaker_dir = os.path.join(self.Verification_Dir, folder_name)
                 if not os.path.exists(speaker_dir):
                     os.mkdir(speaker_dir)
                 speaker_file = os.path.join(speaker_dir, f"{speakers[speaker_index]}.wav")
                 speaker_data.export(speaker_file, format="wav")
+
+    def run_separate_speakers(self):        
+            """
+            Runs the speaker separation process if it has not already been done
+            """
+            if os.listdir(self.Verification_Dir) == []:
+                self.find_speakers()
+                self.export_speakers()
+            else: 
+                print("Speaker(s) have already been split! Skipping...")
+
+    #---------------------Speaker Verification---------------------#
+
+    
+
+
+
+    def create_fingerprint(self, file_dir):
+        """
+        Creates a fingerprint for a given audio file
+        
+        Parameters:
+            file_dir: path to the audio file
+        """
+        self.Speaker_Fingerprint = self.Inference(file_dir)
+
+    def verify_file(self, file_dir):
+        """
+        Verifies if an audio file contains the target speaker
+        
+        Parameters:
+            file_dir: path to the audio file
+        
+        Returns:
+            file_dir if the file contains the target speaker, None otherwise
+        """
+        if os.stat(file_dir).st_size > 100:
+            file_fingerprint = self.Inference(file_dir)
+            difference = 1 - spatial.distance.cosine(file_fingerprint, self.Speaker_Fingerprint)
+            if difference > self.Verification_Threshold:
+                return file_dir
+            else: 
+                return None
+        else: 
+            return None
+
+    def verify_folder(self, folder_dir):
+        """
+        Verifies all audio files in a folder and returns a list of verified files
+        
+        Parameters:
+            folder_dir: path to the folder containing audio files
+        
+        Returns:
+            A list of verified audio files
+        """
+        verified_files = []
+        for file in get_files(folder_dir):
+            file_dir = os.path.join(folder_dir, file)
+            if self.verify_file(file_dir) is not None:
+                verified_files.append(file_dir)
+        return verified_files
+
+    def combine_files(self, files_dir: list):
+        """
+        Combines multiple audio files into a single audio file
+        
+        Parameters:
+            files_dir: list of paths to the audio files to be combined
+        
+        Returns:
+            A single audio file containing the combined audio data
+        """
+        combined_file = AudioSegment.empty()
+        for file in files_dir:
+            combined_file += AudioSegment.from_file(file, format="wav")
+        return combined_file
+
+
+    def run_verification(self):
+        """
+        Runs the speaker verification process if it has not already been done
+        """
+        if os.listdir(self.Export_Dir) == []:
+            if self.Speaker_Id is None:
+                self.Speaker_Id =  input("Enter Target Speaker Path (.wav): ")
+            if self.Speaker_Fingerprint is None:
+                self.create_fingerprint(self.Speaker_Id)
+            temp_verification_thres = self.Verification_Threshold
+            for folder in get_files(self.Verification_Dir):     
+                folder_dir = os.path.join(self.Verification_Dir, folder)
+                verified_files = self.verify_folder(folder_dir)
+                if verified_files == []:
+                    while verified_files == [] and self.Verification_Threshold > self.Lowest_Threshold:
+                        self.Verification_Threshold -= 0.05
+                        verified_files = self.verify_folder(folder_dir)
+                self.Verification_Threshold = temp_verification_thres
+                if verified_files != []:
+                    verified_speaker = self.combine_files(verified_files)
+                    verified_speaker.export(os.path.join(self.Export_Dir, folder)+'.wav', format="wav")
+                else: 
+                    print(f"Speaker not found in {folder_dir}. You may need to lower the verification threshold if the speaker is present.")
+
+    def run_all(self):
+        """
+        Runs the entire process of speaker separation and verification
+        """
+        if os.listdir(self.Verification_Dir) == []:
+            self.run_separate_speakers()
+        if os.listdir(self.Export_Dir) == []:
+            self.run_verification()
+        else: 
+            print("Speaker(s) have already been verified! Skipping...")
+
+    

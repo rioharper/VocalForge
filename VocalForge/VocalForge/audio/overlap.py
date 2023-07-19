@@ -1,16 +1,26 @@
-from .audio_utils import get_files, concentrate_timestamps
+from .audio_utils import get_files
 from .audio_utils import get_timestamps, export_from_timestamps
 import os
-from pydub import AudioSegment
+from pyannote.audio import Pipeline
 
 class Overlap:
-    def __init__(self, input_dir=None, output_dir=None):
+    def __init__(self, input_dir=None, output_dir=None, hparams=None):
         self.Input_Dir = input_dir
         self.Output_Dir = output_dir
         self.Input_Files = get_files(self.Input_Dir, True, '.wav')
         self.Timelines = []
         self.Timestamps = []
-
+        self.Hparams = hparams
+        
+        
+        # Create a pipeline object using the pre-trained "pyannote/overlapped-speech-detection"
+        self.Pipeline = Pipeline.from_pretrained("pyannote/overlapped-speech-detection",
+                                            use_auth_token=True)
+        
+        self.isHparams = False
+        if self.Hparams is not None:
+            self.Pipeline.instantiate(self.Hparams)
+            self.isHparams = True
 
     def analyze(self) -> list:
         """
@@ -19,13 +29,14 @@ class Overlap:
         Parameters:
         input_dir: (str) dir of input wav files 
         """
-        from pyannote.audio import Pipeline
-        # Create a pipeline object using the pre-trained "pyannote/overlapped-speech-detection"
-        pipeline = Pipeline.from_pretrained("pyannote/overlapped-speech-detection",
-                                            use_auth_token=True)
+        
+        
+        if self.Hparams is not None and self.isHparams == False:
+            self.Pipeline.instantiate(self.Hparams)
+            self.isHparams = True
         
         for file in self.Input_Files:
-            overlap_timeline = pipeline(file)
+            overlap_timeline = self.Pipeline(file)
             self.Timelines.append(overlap_timeline)
 
 
@@ -37,6 +48,15 @@ class Overlap:
         for fileindex in range(len(self.Input_Files)):
             timestamps = get_timestamps(self.Timelines[fileindex])
             self.Timestamps.append(timestamps)
+
+    
+    def update_timeline(self, new_timeline, index: int):
+        """
+        This function updates the timeline for a given file with the new timestamps due to finetuning
+        """
+        self.Timelines[index] = new_timeline
+
+        self.Timestamps[index] = get_timestamps(new_timeline)
     
 
     def test_export(self):

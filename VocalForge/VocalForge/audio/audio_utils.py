@@ -27,6 +27,9 @@ def download_videos(url: str, out_dir: str):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         error_code = ydl.download(url)
 
+    #5 second blank as pyannote doesnt seem to process first ~3 seconds of audio
+    blank = AudioSegment.silent(duration=5000)
+    
     #split if audio is above 1 hour
     for filename in os.listdir(out_dir):
         file = AudioSegment.from_file(os.path.join(out_dir, filename))
@@ -35,15 +38,21 @@ def download_videos(url: str, out_dir: str):
             for index, slice in enumerate(slices):
                 slice.export(os.path.join(out_dir, f'{os.path.splitext(filename)[0]}_{index}.wav'), format='wav')
             os.remove(os.path.join(out_dir, filename))
+        #add 5 second blank at start
+
 
     for filename in os.listdir(out_dir):
         file_stat = os.stat(os.path.join(out_dir, filename))
+        file = AudioSegment.from_file(os.path.join(out_dir, filename))
         if file_stat.st_size > 500000000:
-            file = AudioSegment.from_file(os.path.join(out_dir, filename))
             slices = file[::int((file.duration_seconds*1000)/2)]
             for index, slice in enumerate(slices):
+                slice = blank + slice
                 slice.export(os.path.join(out_dir, f'{os.path.splitext(filename)[0]}_{index}.wav'), format='wav')
             os.remove(os.path.join(out_dir, filename))
+        else:
+            file = blank + file
+            file.export(os.path.join(out_dir, filename), format='wav')
 
     for count, filename in enumerate(os.listdir(out_dir)):
         dst = f"DATA{count}.wav"
@@ -214,13 +223,24 @@ def concentrate_timestamps(timestamps: List[Tuple[int, int]], min_duration: int)
     concatenated_timestamps.append([current_start, current_stop])
     return concatenated_timestamps
 
-
 def calculate_duration(timestamps: List[Tuple[int, int]]) -> float:
     '''pretty self expainatory'''
     duration = 0
     for timestamp in timestamps:
         duration += timestamp[1] - timestamp[0]
     return duration
+
+def find_original_duration(input_file_dir: str) -> float:
+    '''pretty self expainatory'''
+    raw = AudioSegment.from_file(input_file_dir, format="wav")
+    return raw.duration_seconds
+
+def find_duration_diff(new_timestamps: List[Tuple[int, int]], original_duration: float) -> float:
+    '''pretty self expainatory'''
+    new_duration = calculate_duration(new_timestamps)
+    # if abs(original_duration - new_duration) > original_duration * 0.8:
+    #     return abs(new_duration - original_duration)
+    return abs(original_duration - new_duration)
 
 
 def export_from_timestamps(input_file_dir, export_file_dir, timestamps: List[Tuple[int, int]], combine_mode: str = 'timestamps') -> None:

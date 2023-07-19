@@ -5,7 +5,7 @@ from .audio_utils import export_from_timestamps
 import os
 
 class VoiceDetection: 
-    def __init__(self, input_dir=None, output_dir=None, sample_dir=None):
+    def __init__(self, input_dir=None, output_dir=None, sample_dir=None, hparams=None):
         """
         Initializes a new instance of the VoiceDetection class.
 
@@ -22,26 +22,39 @@ class VoiceDetection:
         self.Input_Files = get_files(self.Input_Dir, True, '.wav')
         self.Timelines = []
         self.Timestamps = []
+        self.Hparams = hparams
+        from pyannote.audio import Pipeline
+        self.Pipeline = Pipeline.from_pretrained("pyannote/voice-activity-detection", 
+                                    use_auth_token=True)
+        
+        # instantiate the pipeline with hyperparameters if declared
+        self.isHparams = False
+        if self.Hparams is not None:
+            self.Pipeline.instantiate(self.Hparams)
+            self.isHparams = True
 
 
-    def analyze(self):
+    def analyze_folder(self):
         """
         Analyzes audio files in a folder and performs voice activity detection (VAD)
         on the audio files. It uses the 'pyannote.audio' library's pre-trained 'brouhaha' model for the analysis.
-
-        Parameters:
-            input_files (list): list of files to analyze
-        Returns:
-            Timelines (list): List of voice activity detection output for each audio file.
         """
-        from pyannote.audio import Pipeline
-        vad = Pipeline.from_pretrained("pyannote/voice-activity-detection", 
-                                    use_auth_token=True)
+
+        if self.Hparams is not None and self.isHparams == False:
+            self.Pipeline.instantiate(self.Hparams)
+            self.isHparams = True
 
         for file in self.Input_Files:
-            output = vad(file)
+            output = self.Pipeline(file)
             self.Timelines.append(output)
-                    
+    
+
+    def analyze_file(self, path):
+        if self.Hparams is not None and self.isHparams == False:
+            self.Pipeline.instantiate(self.Hparams)
+            self.isHparams = True
+        '''function to analyze a single file'''
+        return self.Pipeline(path)
     
 
     def find_timestamps(self):
@@ -61,6 +74,16 @@ class VoiceDetection:
             self.Timestamps.append(timestamps)
 
 
+    def update_timeline(self, new_timeline, index: int):
+        """
+        This function updates the timeline for a given file with the new timestamps due to finetuning
+        """
+        self.Timelines[index] = new_timeline
+
+        self.Timestamps[index] = get_timestamps(new_timeline)
+
+
+
     def export(self):
         """
         Given a list of timestamps for each file, the function exports 
@@ -74,7 +97,7 @@ class VoiceDetection:
     def run(self):
         """runs the voice detection pipeline"""
         if os.listdir(self.Input_Dir) != []:
-            self.analyze()
+            self.analyze_folder()
         if self.Timelines != []:
             self.find_timestamps()
         if self.Timestamps != []:

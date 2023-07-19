@@ -50,35 +50,35 @@ class ExportAudio:
         """
         Normalize all audio files in the export directory and export them to the normalization directory.
         """
-        for file in get_files(self.Export_Dir, True):
-            audio = AudioSegment.from_file(file, format="wav")
+        for file in get_files(self.Export_Dir):
+            file_dir = os.path.join(self.Export_Dir, file)
+            audio = AudioSegment.from_file(file_dir, format="wav")
             normalized = normalize(audio)
             normalized.export(os.path.join(self.Normalization_Dir, os.path.basename(file)), format="wav")
 
-    def noise_remove_folder(self, input_folder_dir: Optional[str] = None) -> None:
+    def noise_remove(self) -> None:
         """
-        Remove noise from all audio files in the specified directory and export them to the noise-removed directory.
+        Removes noise from audio files in `file_or_folder` directory or file.
 
-        Args:
-            input_folder_dir (str, optional): The directory containing the audio files to remove noise from. Defaults to None.
+        Parameters:
+        file_or_folder (str or os.PathLike): The directory or file containing the audio files.
+        sample_rate (int): The sample rate of the audio files.
+
+        Returns:
+        None
         """
-        if input_folder_dir is None:
-            input_folder_dir = self.Input_Dir
-        elif input_folder_dir is None and self.Input_Dir is None:
-            raise ValueError("Please provide either the folder_dir or the Noise_Removed_Dir")
-
         model, df_state, _ = init_df(config_allow_defaults=True)
 
-        for file in get_files(input_folder_dir, True, ".wav"):
+        for file in self.Input_Files:
+            print(f"Removing Noise from {file}...")
             try:
-                audio, _ = load_audio(file, sr=df_state.sr())
+                file_dir = os.path.join(self.Export_Dir, file)
+                audio, _ = load_audio(file_dir, sr=self.Sample_Rate)
                 enhanced = enhance(model, df_state, audio)
-                save_audio(os.path.join(self.Noise_Removed_Dir, os.path.basename(file)), enhanced, df_state.sr())
+                save_audio(file_dir, enhanced, sr=self.Sample_Rate)
                 cuda.empty_cache()
             except RuntimeError:
                 print(f"file is too large for GPU, skipping: {file}")
-                os.system(f"cp {file} {self.Noise_Removed_Dir}")
-        del model, df_state
 
     def format_audio_folder(self) -> None:
         """
@@ -101,7 +101,7 @@ class ExportAudio:
 
         if self.Noise_Removed_Dir is not None and os.listdir(self.Noise_Removed_Dir) == []:
             print("Removing Noise...")
-            self.noise_remove_folder(self.Export_Dir)
+            self.noise_remove()
 
         if self.Normalization_Dir is not None and os.listdir(self.Normalization_Dir) == []:
             print("Normalizing Audio...")
