@@ -46,8 +46,10 @@ apt-get update && apt-get install -y libsndfile1 ffmpeg
 conda create -n VocalForge python=3.8 pytorch=1.11.0 torchvision=0.12.0 torchaudio=0.11.0 cudatoolkit=11.3.1 -c pytorch
 
 conda activate VocalForge
-#to install from pip 
-pip install VocalForge['audio']
+#to install the audio protion of VocalForge from pip
+pip install VocalForge[audio]
+
+
 #to install source
 git clone https://github.com/rioharper/VocalForge
 cd VocalForge
