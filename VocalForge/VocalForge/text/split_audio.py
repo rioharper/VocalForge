@@ -8,28 +8,23 @@ class SplitAudio():
     segmented audio folder.
 
     Args:
-    - offset: The number of seconds to add or subtract from the timestamps.
-    - max_duration: The maximum duration of each clip.
-    - threshold: The threshold to use for processing the alignment.
-
-    Returns:
-    None
-
+    1. input_dir (str): Directory path of the segmented audio files.
+    2. output_dir (str): Directory path of the clips.
+    3. offsets (list): List of offsets for each file, i.e [0, 0.5, 1.0] for 3 files.
+    4. paddings (list): List of paddings for each file, i.e [0, 0.5, 1.0] for 3 files.
+    5. max_duration (int): Max duration of the clips in seconds.
+    6. threshold (float): Confidence threshold for the timing of the clips. The closer to 0, the more selective the clips will be. (cannot be > 0)
     """
     def __init__(self, input_dir, output_dir, offsets=[0], paddings=[0], max_duration=40, threshold=2.5):
         self.Input_Dir = input_dir
-        print(self.Input_Dir)
-        self.Out_Dir = output_dir
+        self.Output_Dir = output_dir
         self.Offset = offsets
         self.Padding = paddings
         self.Max_Duration = max_duration
         self.Threshold = -threshold
         
 
-    def run_slicing(self):
-        if os.listdir(self.Out_Dir) != []:
-            print("audio has already been sliced! Skipping...")
-            return
+    def run(self):
         for index, file in enumerate(get_files(self.Input_Dir, '.txt')):
             try:
                 offset = self.Offset[index]
@@ -39,7 +34,7 @@ class SplitAudio():
                 padding = self.Padding[index]
             except:
                 padding = self.Padding[0]
-            clips_folder_dir = os.path.join(self.Out_Dir, file.split('_segmented')[0])
+            clips_folder_dir = os.path.join(self.Output_Dir, file.split('_segmented')[0])
             os.mkdir(clips_folder_dir)
             file_dir = os.path.join(self.Input_Dir, file)
             process_alignment(

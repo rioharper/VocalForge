@@ -8,40 +8,40 @@ class NormalizeText():
     This function prepares the audio and text files for language modeling.
     
     Args:
-    1. model (str): Model name to be used for processing the text.
-    2. length (int): The max length of each sentence in the output file.
-    3. lang (str): Language of the input audio and text files.
-    
-    Returns:
-    None
+    1. input_dir (str): Directory path of the raw text files.
+    2. output_dir (str): Directory path of the processed text files.
+    3. audio_dir (str): Directory path of the raw audio files.
+    4. model (str): Nvidia Model to use for language modeling.
+    5. max_length (int): max length of the text sentences.
+    7. min_length (int): min length of the text sentences.
+    6. lang (str): Language of the text, i.e 'en' or 'ru'
+
     """
     def __init__(
         self, 
         input_dir: str, 
-        out_dir: str, 
+        output_dir: str, 
         audio_dir: str, 
         model='nvidia/stt_en_citrinet_1024_gamma_0_25', 
-        length=25, 
-        lang='en',
-        min_length=0
+        max_length=25, 
+        min_length=0,
+        lang='en'
     ):
         self.Model = model
-        self.Length = length
+        self.Max_Length = max_length
         self.Min_Length = min_length
         self.Lang = lang
         self.Input_Dir = input_dir
-        self.Out_Dir = out_dir
+        self.Output_Dir = output_dir
         self.Audio_Dir = audio_dir
         from nemo.collections.asr.models import ASRModel
         self.Cfg = ASRModel.from_pretrained(model_name=self.Model, return_config=True)  
-
-    # Check if the folders have already been processed
     
     
 
     def prepare_audio_file(self, aud_dir, out_dir):
         """
-        This function prepares the audio file for language modeling.
+        This function prepares the audio file for language modeling. Currently it only moves the file to the output directory.
         
         Args:
         1. audio_dir (str): Directory path of the raw audio file.
@@ -72,7 +72,7 @@ class NormalizeText():
             transcript, 
             lang, 
             cfg.decoder.vocabulary, 
-            self.Length, 
+            self.Max_Length, 
             additional_split_symbols=None,
             min_length=self.Min_Length
         )
@@ -86,9 +86,7 @@ class NormalizeText():
         1. file_num (str): File number to be used in the file name.
         2. text_type (str): Type of text to be written to the file.
         3. sentences (str): Processed text sentences to be written to the file.
-        
-        Returns:
-        None
+        4. outdir (str): Directory path of the processed text files.
         """
         file_name = f"{file_num}{text_type}"
         file_dir = os.path.join(outdir, file_num, file_name)
@@ -99,7 +97,14 @@ class NormalizeText():
                 f.write(sentence+"\n")
 
     def prepare_file(self, text_dir, aud_dir, out_dir):
-        #folder_dir = os.path.join(processed_dir, file.replace('.txt',''))
+        """
+        This function prepares the text and audio files for language modeling.
+        
+        Args:
+        1. text_dir (str): Directory path of the raw text file.
+        2. aud_dir (str): Directory path of the raw audio file.
+        3. out_dir (str): Directory path of the processed text and audio files.
+        """
         base_name = os.path.basename(text_dir)
         sentence_types = self.prepare_text(text_dir)
         folder_dir = os.path.join(out_dir, base_name.replace('.txt', ''))
@@ -109,12 +114,12 @@ class NormalizeText():
             self.write_file(base_name.replace('.txt', ''), name, sentences.splitlines(), out_dir)
         self.prepare_audio_file(aud_dir, os.path.join(folder_dir, base_name.replace('.txt', '.wav')))
     
-    def run_processing(self):
-        print(self.Out_Dir)
-        if os.listdir(self.Out_Dir) != []:
-            print("folder(s) have already been processed! Skipping...")
-            return
+    
+    def run(self):
+        """
+        This function runs the text normalization pipeline.
+        """
         for file in get_files(self.Input_Dir, '.txt'):
             text_dir = os.path.join(self.Input_Dir, file)
             audfile_dir = os.path.join(self.Audio_Dir, file.replace('.txt', '.wav'))
-            self.prepare_file(text_dir, audfile_dir, self.Out_Dir)
+            self.prepare_file(text_dir, audfile_dir, self.Output_Dir)
