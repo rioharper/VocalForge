@@ -68,14 +68,15 @@ Pyannote models need to be "signed up for" in Hugging Face for research purposes
 
 ## API Example
 ```
-from VocalForge.audio import RefineAudio
+from VocalForge.text.normalize_text import NormalizeText
 
-refine = RefineAudio(
-	input_dir='raw_audio', 
-	vad_dir='vad', 
-	vad_theshold=0.9
+normalize = NormalizeText(
+    input_dir= os.path.join(work_path, 'transcription'),
+    out_dir= os.path.join(work_path, 'processed'),
+    audio_dir= os.path.join(work_path, 'input_audio'),
 )
-refine.VoiceDetection.run()
+
+normalize.run()
 ```
 
 ## TODO
