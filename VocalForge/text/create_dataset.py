@@ -75,12 +75,12 @@ class GenerateDataset():
         Parameters:
             metadata (pd.DataFrame): Metadata for the audio data.
         """
-        wav_dir = os.path.join(self.Out_Dir, 'wavs')
+        wav_dir = os.path.join(self.Output_Dir, 'wavs')
         try:
             os.mkdir(wav_dir)
         except:
             pass
-        metadata.to_csv(os.path.join(self.Out_Dir, "metadata.csv"),
+        metadata.to_csv(os.path.join(self.Output_Dir, "metadata.csv"),
                         index=False, header=False, sep='|', encoding='utf-8-sig')
         
         for folder in get_files(self.Sliced_Aud_Dir):

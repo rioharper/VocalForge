@@ -82,4 +82,4 @@ class Transcribe():
         """
         Transcribes all audio files in the `Input_Dir` folder.
         """
-        self.analyze(self.Input_Dir)
+        self.analyze()

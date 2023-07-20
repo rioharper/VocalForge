@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "VocalForge"
-version = "0.0.6"
+version = "0.1.1"
 
 authors = [
   {email="rio@rioharper.com" },

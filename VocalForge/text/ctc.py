@@ -42,6 +42,7 @@ def ctc(model, aud_path: str, out_file: str, window_size: int):
         tokenizer = None
 
     # Read the audio file
+    print(aud_path)
     sample_rate, signal = wav.read(aud_path)
 
     # Path to the raw transcript file

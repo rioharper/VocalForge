@@ -41,7 +41,7 @@ class Segment():
         float: Mean loss obtained from the model.
         """
         loss_folder = []
-        for aud_file in get_files(folder_dir, '.wav'):
+        for aud_file in get_files(folder_dir, ext='.wav'):
             aud_path = os.path.join(folder_dir, aud_file)
             outfile = os.path.join(out_dir, aud_file.replace('.wav', '_segmented.txt'))
             loss = ctc(self.Model, aud_path, outfile, self.Window_Size)
