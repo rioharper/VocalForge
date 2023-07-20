@@ -46,8 +46,10 @@ apt-get update && apt-get install -y libsndfile1 ffmpeg
 conda create -n VocalForge python=3.8 pytorch=1.11.0 torchvision=0.12.0 torchaudio=0.11.0 cudatoolkit=11.3.1 -c pytorch
 
 conda activate VocalForge
-#to install from pip
-pip install VocalForge
+#to install the audio protion of VocalForge from pip
+pip install VocalForge[audio]
+
+
 #to install source
 git clone https://github.com/rioharper/VocalForge
 cd VocalForge
@@ -68,14 +70,15 @@ Pyannote models need to be "signed up for" in Hugging Face for research purposes
 
 ## API Example
 ```
-from VocalForge.audio import RefineAudio
+from VocalForge.text.normalize_text import NormalizeText
 
-refine = RefineAudio(
-	input_dir='raw_audio', 
-	vad_dir='vad', 
-	vad_theshold=0.9
+normalize = NormalizeText(
+    input_dir= os.path.join(work_path, 'transcription'),
+    out_dir= os.path.join(work_path, 'processed'),
+    audio_dir= os.path.join(work_path, 'input_audio'),
 )
-refine.VoiceDetection.run()
+
+normalize.run()
 ```
 
 ## TODO
