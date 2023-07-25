@@ -1,5 +1,5 @@
 from typing import Optional
-import os
+from pathlib import Path
 from pydub import AudioSegment
 from pydub.effects import normalize
 from torch import cuda
@@ -27,10 +27,10 @@ class ExportAudio:
         normalization_dir: Optional[str] = None,
         sample_rate: int = 22050,
     ):
-        self.Input_Dir = input_dir
-        self.Export_Dir = export_dir
-        self.Noise_Removed_Dir = noise_removed_dir
-        self.Normalization_Dir = normalization_dir
+        self.Input_Dir = Path(input_dir) if input_dir else None
+        self.Export_Dir = Path(export_dir) if export_dir else None
+        self.Noise_Removed_Dir = Path(noise_removed_dir) if noise_removed_dir else None
+        self.Normalization_Dir = Path(normalization_dir) if normalization_dir else None
         self.Input_Files = get_files(self.Input_Dir)
         self.Sample_Rate = sample_rate
 
@@ -44,20 +44,18 @@ class ExportAudio:
         """
         audio = AudioSegment.from_file(file_dir, format="wav")
         normalized = normalize(audio)
-        normalized.export(
-            os.path.join(output_dir, os.path.basename(file_dir)), format="wav"
-        )
+        normalized.export(output_dir / Path(file_dir).name, format="wav")
 
     def normalize_folder(self) -> None:
         """
         Normalize all audio files in the export directory and export them to the normalization directory.
         """
         for file in get_files(self.Export_Dir):
-            file_dir = os.path.join(self.Export_Dir, file)
+            file_dir = self.Export_Dir / file
             audio = AudioSegment.from_file(file_dir, format="wav")
             normalized = normalize(audio)
             normalized.export(
-                os.path.join(self.Normalization_Dir, os.path.basename(file)),
+                self.Normalization_Dir / file.name,
                 format="wav",
             )
 
@@ -77,7 +75,7 @@ class ExportAudio:
         for file in self.Input_Files:
             print(f"Removing Noise from {file}...")
             try:
-                file_dir = os.path.join(self.Export_Dir, file)
+                file_dir = self.Export_Dir / file
                 audio, _ = load_audio(file_dir, sr=self.Sample_Rate)
                 enhanced = enhance(model, df_state, audio)
                 save_audio(file_dir, enhanced, sr=self.Sample_Rate)
@@ -93,29 +91,25 @@ class ExportAudio:
             raw = AudioSegment.from_file(file, format="wav")
             raw = raw.set_channels(1)
             raw = raw.set_frame_rate(self.Sample_Rate)
-            raw.export(
-                os.path.join(self.Export_Dir, os.path.basename(file)), format="wav"
-            )
+            raw.export(self.Export_Dir / Path(file).name, format="wav")
 
     def run(self) -> None:
         """
         Run the audio export process with the specified options.
         """
-        if os.listdir(self.Export_Dir) != []:
+        if any(self.Export_Dir.iterdir()):
             print("file(s) have already been formatted! Skipping...")
         else:
             self.format_audio_folder()
 
-        if (
-            self.Noise_Removed_Dir is not None
-            and os.listdir(self.Noise_Removed_Dir) == []
+        if self.Noise_Removed_Dir is not None and not any(
+            self.Noise_Removed_Dir.iterdir()
         ):
             print("Removing Noise...")
             self.noise_remove()
 
-        if (
-            self.Normalization_Dir is not None
-            and os.listdir(self.Normalization_Dir) == []
+        if self.Normalization_Dir is not None and not any(
+            self.Normalization_Dir.iterdir()
         ):
             print("Normalizing Audio...")
             self.normalize_folder()

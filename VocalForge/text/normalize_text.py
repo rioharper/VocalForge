@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from pydub import AudioSegment
 from .process_text import format_text, split_text, normalize_text
 from .text_utils import get_files
@@ -33,9 +33,9 @@ class NormalizeText:
         self.Max_Length = max_length
         self.Min_Length = min_length
         self.Lang = lang
-        self.Input_Dir = input_dir
-        self.Output_Dir = output_dir
-        self.Audio_Dir = audio_dir
+        self.Input_Dir = Path(input_dir)
+        self.Output_Dir = Path(output_dir)
+        self.Audio_Dir = Path(audio_dir)
         from nemo.collections.asr.models import ASRModel
 
         self.Cfg = ASRModel.from_pretrained(model_name=self.Model, return_config=True)
@@ -90,9 +90,9 @@ class NormalizeText:
         4. outdir (str): Directory path of the processed text files.
         """
         file_name = f"{file_num}{text_type}"
-        file_dir = os.path.join(outdir, file_num, file_name)
+        file_dir = outdir / file_num / file_name
         print(file_dir)
-        with open(file_dir + ".txt", "w", encoding="UTF-8") as f:
+        with open(file_dir.with_suffix(".txt"), "w", encoding="UTF-8") as f:
             for sentence in sentences:
                 sentence = sentence.strip()
                 f.write(sentence + "\n")
@@ -106,26 +106,21 @@ class NormalizeText:
         2. aud_dir (str): Directory path of the raw audio file.
         3. out_dir (str): Directory path of the processed text and audio files.
         """
-        base_name = os.path.basename(text_dir)
+        base_name = text_dir.name
         sentence_types = self.prepare_text(text_dir)
-        folder_dir = os.path.join(out_dir, base_name.replace(".txt", ""))
-        try:
-            os.mkdir(folder_dir)
-        except:
-            pass
+        folder_dir = out_dir / base_name.replace(".txt", "")
+        folder_dir.mkdir(exist_ok=True)
         for name, sentences in sentence_types.items():
             self.write_file(
                 base_name.replace(".txt", ""), name, sentences.splitlines(), out_dir
             )
-        self.prepare_audio_file(
-            aud_dir, os.path.join(folder_dir, base_name.replace(".txt", ".wav"))
-        )
+        self.prepare_audio_file(aud_dir, folder_dir / base_name.replace(".txt", ".wav"))
 
     def run(self):
         """
         This function runs the text normalization pipeline.
         """
         for file in get_files(self.Input_Dir, ".txt"):
-            text_dir = os.path.join(self.Input_Dir, file)
-            audfile_dir = os.path.join(self.Audio_Dir, file.replace(".txt", ".wav"))
+            text_dir = self.Input_Dir / file
+            audfile_dir = self.Audio_Dir / file.replace(".txt", ".wav")
             self.prepare_file(text_dir, audfile_dir, self.Output_Dir)

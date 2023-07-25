@@ -1,13 +1,13 @@
 from .audio_utils import get_files
 from .audio_utils import get_timestamps, export_from_timestamps
-import os
+from pathlib import Path
 from pyannote.audio import Pipeline
 
 
 class Overlap:
     def __init__(self, input_dir=None, output_dir=None, hparams=None):
-        self.Input_Dir = input_dir
-        self.Output_Dir = output_dir
+        self.Input_Dir = Path(input_dir)
+        self.Output_Dir = Path(output_dir)
         self.Input_Files = get_files(self.Input_Dir, True, ".wav")
         self.Timelines = []
         self.Timestamps = []
@@ -57,22 +57,23 @@ class Overlap:
         self.Timestamps[index] = get_timestamps(new_timeline)
 
     def test_export(self):
-        for index, file in enumerate(self.Input_Files):
-            base_file_name = file.split("/")[-1]
+        for index, file_str in enumerate(self.Input_Files):
+            file = Path(file_str)  # convert string to Path object
+            base_file_name = file.name
             export_from_timestamps(
                 file,
-                os.path.join(self.Output_Dir, base_file_name),
+                self.Output_Dir / base_file_name,
                 self.Timestamps[index],
                 combine_mode="time_between",
             )
 
     def run(self):
         """runs the overlap detection pipeline"""
-        if os.listdir(self.Input_Dir) != []:
+        if any(Path(self.Input_Dir).iterdir()):
             self.analyze()
-        if self.Timelines != []:
+        if self.Timelines:
             self.find_timestamps()
             print("Found timestamps")
-        if self.Timestamps != []:
+        if self.Timestamps:
             self.test_export()
         print(f"Analyzed files for voice detection")

@@ -1,4 +1,3 @@
-import os
 from torch import cuda
 import numpy as np
 import nemo.collections.asr as nemo_asr

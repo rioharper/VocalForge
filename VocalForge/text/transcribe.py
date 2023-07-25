@@ -1,5 +1,5 @@
 from .text_utils import get_files
-import os
+from pathlib import Path
 from whisper import load_model
 
 
@@ -61,11 +61,11 @@ class Transcribe:
             do_write (bool, optional): Whether to write the transcriptions to text files. Defaults to True.
         """
         for file in get_files(self.Input_Dir):
-            text_file_dir = os.path.join(self.Output_Dir, file.split(".")[0] + ".txt")
+            text_file_dir = self.Output_Dir / (file.split(".")[0] + ".txt")
             # check if the text file already exists
-            if not os.path.exists(text_file_dir):
+            if not text_file_dir.exists():
                 # transcribe the audio file
-                aud_file_dir = os.path.join(self.Input_Dir, file)
+                aud_file_dir = self.Input_Dir / file
                 result = self.Model.transcribe(aud_file_dir, initial_prompt=self.Prompt)
                 self.Texts.append(result["text"].strip())
                 if self.Do_Write:

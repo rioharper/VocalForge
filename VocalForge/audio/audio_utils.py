@@ -1,5 +1,5 @@
 from pydub import AudioSegment
-import os
+from pathlib import Path
 import yt_dlp
 import natsort
 from typing import List, Tuple
@@ -16,7 +16,7 @@ def download_videos(url: str, out_dir: str):
      Outputs:
      - None, but audio clips are saved to disk in the .wav format.
     """
-
+    out_path = Path(out_dir)
     ydl_opts = {
         "format": "wav/bestaudio/best",
         "postprocessors": [
@@ -25,7 +25,7 @@ def download_videos(url: str, out_dir: str):
                 "preferredcodec": "wav",
             }
         ],
-        "outtmpl": os.path.join(out_dir, "%(title)s.%(ext)s"),
+        "outtmpl": str(out_path / "%(title)s.%(ext)s"),
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -35,43 +35,31 @@ def download_videos(url: str, out_dir: str):
     blank = AudioSegment.silent(duration=5000)
 
     # split if audio is above 1 hour
-    for filename in os.listdir(out_dir):
-        file = AudioSegment.from_file(os.path.join(out_dir, filename))
+    for filename in out_path.iterdir():
+        file = AudioSegment.from_file(filename)
         if len(file) > 3500000:
             slices = file[::3500000]
             for index, slice in enumerate(slices):
-                slice.export(
-                    os.path.join(
-                        out_dir, f"{os.path.splitext(filename)[0]}_{index}.wav"
-                    ),
-                    format="wav",
-                )
-            os.remove(os.path.join(out_dir, filename))
+                slice.export(out_path / f"{filename.stem}_{index}.wav", format="wav")
+            filename.unlink()
         # add 5 second blank at start
 
-    for filename in os.listdir(out_dir):
-        file_stat = os.stat(os.path.join(out_dir, filename))
-        file = AudioSegment.from_file(os.path.join(out_dir, filename))
-        if file_stat.st_size > 500000000:
+    for filename in out_path.iterdir():
+        file = AudioSegment.from_file(filename)
+        if filename.stat().st_size > 500000000:
             slices = file[:: int((file.duration_seconds * 1000) / 2)]
             for index, slice in enumerate(slices):
                 slice = blank + slice
-                slice.export(
-                    os.path.join(
-                        out_dir, f"{os.path.splitext(filename)[0]}_{index}.wav"
-                    ),
-                    format="wav",
-                )
-            os.remove(os.path.join(out_dir, filename))
+                slice.export(out_path / f"{filename.stem}_{index}.wav", format="wav")
+            filename.unlink()
         else:
             file = blank + file
-            file.export(os.path.join(out_dir, filename), format="wav")
+            file.export(filename, format="wav")
 
-    for count, filename in enumerate(os.listdir(out_dir)):
+    for count, filename in enumerate(out_path.iterdir()):
         dst = f"DATA{count}.wav"
-        src = os.path.join(out_dir, filename)
-        dst = os.path.join(out_dir, dst)
-        os.rename(src, dst)
+        dst = out_path / dst
+        filename.rename(dst)
 
 
 def split_files(folder: str, dir: str, duration: int):
@@ -88,14 +76,12 @@ def split_files(folder: str, dir: str, duration: int):
 
     """
 
-    folder_dir = os.path.join(dir, folder)
-    for file in get_files(folder_dir, ext=".wav"):
-        file_dir = os.path.join(folder_dir, file)
-        raw = AudioSegment.from_file(file_dir, format="wav")
+    folder_dir = Path(dir, folder)
+    for file in get_files(str(folder_dir), ext=".wav"):
+        file_path = folder_dir / file
+        raw = AudioSegment.from_file(file_path, format="wav")
         for index, clip in enumerate(raw[::duration]):
-            clip_dir = os.path.join(
-                folder_dir, file.split(".")[0], f"{file.split('.')[0]}_{index}.wav"
-            )
+            clip_dir = folder_dir / file_path.stem / (f"{file_path.stem}_{index}.wav")
             clip.export(clip_dir, format="wav")
 
 
@@ -116,16 +102,17 @@ def get_files(dir: str, full_dir: bool = False, ext: str = None) -> list:
         Returns:
         ['/home/user/documents/file1.txt', '/home/user/documents/file2.txt']
     """
+    dir_path = Path(dir)
     files = []
-    for file in os.listdir(dir):
+    for file in dir_path.iterdir():
         if ext is not None:
-            if file.endswith(ext):
+            if file.suffix == ext:
                 if full_dir:
-                    files.append(os.path.join(dir, file))
+                    files.append(str(file))
                 else:
-                    files.append(file)
+                    files.append(file.name)
         else:
-            files.append(file)
+            files.append(file.name)
     files = natsort.natsorted(files)
     return files
 
@@ -145,10 +132,10 @@ def create_core_folders(folders: list, workdir: str):
         create_core_folders(['raw', 'processed'], '/home/user/documents')
         Creates the folders 'raw' and 'processed' in the directory '/home/user/documents'.
     """
+    workdir_path = Path(workdir)
     for folder in folders:
-        folderdir = os.path.join(workdir, folder)
-        if not os.path.exists(folderdir):
-            os.makedirs(folderdir)
+        folder_path = workdir_path / folder
+        folder_path.mkdir(exist_ok=True)
 
 
 def create_samples(length: int, input_dir: str, output_dir: str) -> None:
@@ -169,13 +156,14 @@ def create_samples(length: int, input_dir: str, output_dir: str) -> None:
         '/home/user/documents/raw' directory and saves them to the '/home/user/documents/samples'
         directory.
     """
-
-    rawfiles = get_files(input_dir, ".wav")
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    rawfiles = get_files(input_path, ".wav")
 
     for file in rawfiles:
-        raw_data = AudioSegment.from_file(os.path.join(input_dir, file), format="wav")
+        raw_data = AudioSegment.from_file(input_path / file, format="wav")
         entry = raw_data[: length * 1000]
-        nfilename = os.path.join(output_dir, file)
+        nfilename = output_path / file
         entry.export(nfilename, format="wav")
 
 

@@ -1,6 +1,6 @@
 import re
 import regex
-import os
+from pathlib import Path
 from nemo_text_processing.text_normalization.normalize import Normalizer
 from num2words import num2words
 from .normalization_helpers import RU_ABBREVIATIONS, LATIN_TO_RU
@@ -226,7 +226,7 @@ def normalize_text(sentences, language, vocabulary, n_jobs=1, batch_size=100):
         if language == "en":
             print("Using NeMo normalization tool...")
             normalizer = Normalizer(
-                input_case="cased", cache_dir=os.path.join(os.getcwd(), "en_grammars")
+                input_case="cased", cache_dir=Path.cwd() / "en_grammars"
             )
             sentences_norm = normalizer.normalize_list(
                 sentences,

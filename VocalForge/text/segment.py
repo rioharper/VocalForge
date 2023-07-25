@@ -1,5 +1,5 @@
 from .text_utils import get_files
-import os
+from pathlib import Path
 import statistics
 from .ctc import ctc
 
@@ -50,10 +50,12 @@ class Segment:
         float: Mean loss obtained from the model.
         """
         loss_folder = []
-        for aud_file in get_files(folder_dir, ext=".wav"):
-            aud_path = os.path.join(folder_dir, aud_file)
-            outfile = os.path.join(out_dir, aud_file.replace(".wav", "_segmented.txt"))
-            loss = ctc(self.Model, aud_path, outfile, self.Window_Size)
+        folder_dir = Path(folder_dir)
+        out_dir = Path(out_dir)
+        for aud_file in get_files(str(folder_dir), ext=".wav"):
+            aud_path = folder_dir / aud_file
+            outfile = out_dir / aud_file.replace(".wav", "_segmented.txt")
+            loss = ctc(self.Model, str(aud_path), str(outfile), self.Window_Size)
             loss_folder.append(loss)
         try:
             return statistics.mean(loss_folder)
@@ -64,10 +66,12 @@ class Segment:
         self.Median_Loss = statistics.median(self.Loss)
 
     def run(self):
-        for folder in get_files(self.Input_Dir):
-            folder_dir = os.path.join(self.Input_Dir, folder)
-            value = self.segment_folder(folder_dir, self.Output_Dir)
-            if value != None:
+        input_dir = Path(self.Input_Dir)
+        output_dir = Path(self.Output_Dir)
+        for folder in get_files(str(input_dir)):
+            folder_dir = input_dir / folder
+            value = self.segment_folder(str(folder_dir), str(output_dir))
+            if value is not None:
                 self.Loss.append(value)
         self.Median_Loss = statistics.median(self.Loss)
         self.find_median_loss()

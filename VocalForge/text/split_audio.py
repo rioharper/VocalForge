@@ -1,5 +1,5 @@
 from .ctc_utils import process_alignment
-import os
+from pathlib import Path
 from .text_utils import get_files
 
 
@@ -26,15 +26,15 @@ class SplitAudio:
         max_duration=40,
         threshold=2.5,
     ):
-        self.Input_Dir = input_dir
-        self.Output_Dir = output_dir
+        self.Input_Dir = Path(input_dir)
+        self.Output_Dir = Path(output_dir)
         self.Offset = offsets
         self.Padding = paddings
         self.Max_Duration = max_duration
         self.Threshold = -threshold
 
     def run(self):
-        for index, file in enumerate(get_files(self.Input_Dir, ".txt")):
+        for index, file in enumerate(get_files(str(self.Input_Dir), ".txt")):
             try:
                 offset = self.Offset[index]
             except:
@@ -43,14 +43,12 @@ class SplitAudio:
                 padding = self.Padding[index]
             except:
                 padding = self.Padding[0]
-            clips_folder_dir = os.path.join(
-                self.Output_Dir, file.split("_segmented")[0]
-            )
-            os.mkdir(clips_folder_dir)
-            file_dir = os.path.join(self.Input_Dir, file)
+            clips_folder_dir = self.Output_Dir / file.name.split("_segmented")[0]
+            clips_folder_dir.mkdir(parents=True, exist_ok=True)
+            file_dir = self.Input_Dir / file
             process_alignment(
-                alignment_file=file_dir,
-                clips_dir=clips_folder_dir,
+                alignment_file=str(file_dir),
+                clips_dir=str(clips_folder_dir),
                 offset=offset,
                 padding=padding,
                 max_duration=self.Max_Duration,

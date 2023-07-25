@@ -1,7 +1,7 @@
 from .audio_utils import get_files
 from .audio_utils import get_timestamps
 from .audio_utils import export_from_timestamps
-import os
+from pathlib import Path
 
 
 class VoiceDetection:
@@ -15,11 +15,11 @@ class VoiceDetection:
             sample_dir (str): The directory containing sample audio files to analyze.
         """
         if sample_dir is not None:
-            self.Input_Dir = sample_dir
+            self.Input_Dir = Path(sample_dir)
         else:
-            self.Input_Dir = input_dir
-            self.Output_Dir = output_dir
-        self.Input_Files = get_files(self.Input_Dir, True, ".wav")
+            self.Input_Dir = Path(input_dir)
+            self.Output_Dir = Path(output_dir)
+        self.Input_Files = get_files(str(self.Input_Dir), True, ".wav")
         self.Timelines = []
         self.Timestamps = []
         self.Hparams = hparams
@@ -87,16 +87,16 @@ class VoiceDetection:
         The new files are saved to a specified directory.
         """
         for index, file in enumerate(self.Input_Files):
-            base_file_name = file.split("/")[-1]
+            base_file_name = Path(file).name
             export_from_timestamps(
                 file,
-                os.path.join(self.Output_Dir, base_file_name),
+                str(self.Output_Dir / base_file_name),
                 self.Timestamps[index],
             )
 
     def run(self):
         """runs the voice detection pipeline"""
-        if os.listdir(self.Input_Dir) != []:
+        if list(self.Input_Dir.glob("*")) != []:
             self.analyze_folder()
         if self.Timelines != []:
             self.find_timestamps()

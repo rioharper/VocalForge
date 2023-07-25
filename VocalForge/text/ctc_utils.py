@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import numpy as np
 import scipy.io.wavfile as wav
@@ -46,7 +45,7 @@ def ctc(
         tokenizer = None
 
     # Load the ASR model
-    if os.path.exists(model):
+    if Path.exists(model):
         asr_model = nemo_asr.models.EncDecCTCModel.restore_from(model)
     elif model in nemo_asr.models.EncDecCTCModel.get_available_model_names():
         asr_model = nemo_asr.models.EncDecCTCModel.from_pretrained(model, strict=False)
@@ -68,21 +67,21 @@ def ctc(
     all_wav_paths = []
 
     # Create segments directory
-    segments_dir = os.path.join(output_dir, "segments")
-    os.makedirs(segments_dir, exist_ok=True)
+    segments_dir = Path.joinpath(output_dir, "segments")
+    segments_dir.mkdir(parents=True, exist_ok=True)
 
     index_duration = None
 
     # Transcribe each audio file
     for path_audio in audio_paths:
-        transcript_file = os.path.join(
+        transcript_file = Path.joinpath(
             data_dir, path_audio.name.replace(".wav", ".txt")
         )
-        segment_file = os.path.join(
+        segment_file = Path.joinpath(
             segments_dir,
             f"{window_len}_" + path_audio.name.replace(".wav", "_segments.txt"),
         )
-        if not os.path.exists(transcript_file):
+        if not Path.exists(transcript_file):
             print(f"{transcript_file} not found. Skipping {path_audio.name}")
             continue
         sample_rate, signal = wav.read(path_audio)
@@ -139,10 +138,10 @@ def process_alignment(
         clips_dir: path to a directory to save audio clips
         args: main script args
     """
-    if not os.path.exists(alignment_file):
+    if not Path.exists(alignment_file):
         raise ValueError(f"{alignment_file} not found")
 
-    base_name = os.path.basename(alignment_file).replace("_segmented.txt", "")
+    base_name = Path.name(alignment_file).replace("_segmented.txt", "")
 
     # read the segments, note the first line contains the path to the original audio
     segments = []
@@ -176,7 +175,7 @@ def process_alignment(
         if duration > 0:
             if score >= threshold:
                 high_score_dur += duration
-                audio_filepath = os.path.join(clips_dir, f"{base_name}_{i:04}.wav")
+                audio_filepath = Path.joinpath(clips_dir, f"{base_name}_{i:04}.wav")
                 wav.write(audio_filepath, sampling_rate, segment)
             else:
                 low_score_dur += duration
@@ -415,7 +414,7 @@ def get_segments(
     transcript_file_no_preprocessing = transcript_file.replace(
         ".txt", "_with_punct.txt"
     )
-    if not os.path.exists(transcript_file_no_preprocessing):
+    if not Path.exists(transcript_file_no_preprocessing):
         raise ValueError(f"{transcript_file_no_preprocessing} not found.")
 
     with open(transcript_file_no_preprocessing, "r") as f:
@@ -426,7 +425,7 @@ def get_segments(
     transcript_file_normalized = transcript_file.replace(
         ".txt", "_with_punct_normalized.txt"
     )
-    if not os.path.exists(transcript_file_normalized):
+    if not Path.exists(transcript_file_normalized):
         raise ValueError(f"{transcript_file_normalized} not found.")
 
     with open(transcript_file_normalized, "r") as f:
@@ -459,8 +458,8 @@ def get_segments(
     config.blank = 0
     logging.debug(f"Syncing {transcript_file}")
     logging.debug(
-        f"Audio length {os.path.basename(path_wav)}: {log_probs.shape[0]}. "
-        f"Text length {os.path.basename(transcript_file)}: {len(ground_truth_mat)}"
+        f"Audio length {Path.name(path_wav)}: {log_probs.shape[0]}. "
+        f"Text length {Path.name(transcript_file)}: {len(ground_truth_mat)}"
     )
 
     timings, char_probs, char_list = cs.ctc_segmentation(
@@ -495,10 +494,10 @@ def process_alignment(
         clips_dir: path to a directory to save audio clips
         args: main script args
     """
-    if not os.path.exists(alignment_file):
+    if not Path.exists(alignment_file):
         raise ValueError(f"{alignment_file} not found")
 
-    base_name = os.path.basename(alignment_file).replace("_segmented.txt", "")
+    base_name = Path.name(alignment_file).replace("_segmented.txt", "")
 
     # read the segments, note the first line contains the path to the original audio
     segments = []
@@ -536,7 +535,7 @@ def process_alignment(
         if duration > 0:
             if score >= threshold:
                 high_score_dur += duration
-                audio_filepath = os.path.join(clips_dir, f"{base_name}_{i:04}.wav")
+                audio_filepath = Path.joinpath(clips_dir, f"{base_name}_{i:04}.wav")
                 wav.write(audio_filepath, sampling_rate, segment)
             else:
                 low_score_dur += duration
