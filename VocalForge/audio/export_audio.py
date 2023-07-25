@@ -44,7 +44,9 @@ class ExportAudio:
         """
         audio = AudioSegment.from_file(file_dir, format="wav")
         normalized = normalize(audio)
-        normalized.export(os.path.join(output_dir, os.path.basename(file_dir)), format="wav")
+        normalized.export(
+            os.path.join(output_dir, os.path.basename(file_dir)), format="wav"
+        )
 
     def normalize_folder(self) -> None:
         """
@@ -54,7 +56,10 @@ class ExportAudio:
             file_dir = os.path.join(self.Export_Dir, file)
             audio = AudioSegment.from_file(file_dir, format="wav")
             normalized = normalize(audio)
-            normalized.export(os.path.join(self.Normalization_Dir, os.path.basename(file)), format="wav")
+            normalized.export(
+                os.path.join(self.Normalization_Dir, os.path.basename(file)),
+                format="wav",
+            )
 
     def noise_remove(self) -> None:
         """
@@ -88,7 +93,9 @@ class ExportAudio:
             raw = AudioSegment.from_file(file, format="wav")
             raw = raw.set_channels(1)
             raw = raw.set_frame_rate(self.Sample_Rate)
-            raw.export(os.path.join(self.Export_Dir, os.path.basename(file)), format="wav")
+            raw.export(
+                os.path.join(self.Export_Dir, os.path.basename(file)), format="wav"
+            )
 
     def run(self) -> None:
         """
@@ -99,10 +106,16 @@ class ExportAudio:
         else:
             self.format_audio_folder()
 
-        if self.Noise_Removed_Dir is not None and os.listdir(self.Noise_Removed_Dir) == []:
+        if (
+            self.Noise_Removed_Dir is not None
+            and os.listdir(self.Noise_Removed_Dir) == []
+        ):
             print("Removing Noise...")
             self.noise_remove()
 
-        if self.Normalization_Dir is not None and os.listdir(self.Normalization_Dir) == []:
+        if (
+            self.Normalization_Dir is not None
+            and os.listdir(self.Normalization_Dir) == []
+        ):
             print("Normalizing Audio...")
             self.normalize_folder()

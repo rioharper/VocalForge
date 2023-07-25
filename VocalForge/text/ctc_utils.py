@@ -6,7 +6,9 @@ import torch
 from joblib import Parallel, delayed
 import nemo.collections.asr as nemo_asr
 from tqdm import tqdm
-from nemo.collections.common.tokenizers.sentencepiece_tokenizer import SentencePieceTokenizer
+from nemo.collections.common.tokenizers.sentencepiece_tokenizer import (
+    SentencePieceTokenizer,
+)
 import logging
 import logging.handlers
 import math
@@ -15,17 +17,16 @@ from typing import List, Tuple, Union
 import statistics
 import ctc_segmentation as cs
 
-def ctc(model: str,
-        output_dir: str,
-        data_dir: str,
-        vocabulary: str,
-        window_len: int = 8000) -> None:
+
+def ctc(
+    model: str, output_dir: str, data_dir: str, vocabulary: str, window_len: int = 8000
+) -> None:
     """
     Transcribes audio files using Encoder-Decoder with Connectionist Temporal Classification (CTC) model.
 
     Args:
-        model (Union[str, nemo_asr.models.EncDecCTCModelBPE]): Path to the pretrained checkpoint or name of a 
-                                                               pretrained model from 
+        model (Union[str, nemo_asr.models.EncDecCTCModelBPE]): Path to the pretrained checkpoint or name of a
+                                                               pretrained model from
                                                                `nemo_asr.models.EncDecCTCModel.get_available_model_names()`
         output_dir (str): Directory where the transcribed segments will be saved.
         data_dir (str): Directory containing audio files.
@@ -74,9 +75,12 @@ def ctc(model: str,
 
     # Transcribe each audio file
     for path_audio in audio_paths:
-        transcript_file = os.path.join(data_dir, path_audio.name.replace(".wav", ".txt"))
+        transcript_file = os.path.join(
+            data_dir, path_audio.name.replace(".wav", ".txt")
+        )
         segment_file = os.path.join(
-            segments_dir, f"{window_len}_" + path_audio.name.replace(".wav", "_segments.txt")
+            segments_dir,
+            f"{window_len}_" + path_audio.name.replace(".wav", "_segments.txt"),
         )
         if not os.path.exists(transcript_file):
             print(f"{transcript_file} not found. Skipping {path_audio.name}")
@@ -91,10 +95,11 @@ def ctc(model: str,
         ), f"Sampling rate of the audio file {path_audio} doesn't match --sample_rate={sample_rate}"
 
         original_duration = len(signal) / sample_rate
-        log_probs = asr_model.transcribe(paths2audio_files=[str(path_audio)], batch_size=1, logprobs=True)[0]
+        log_probs = asr_model.transcribe(
+            paths2audio_files=[str(path_audio)], batch_size=1, logprobs=True
+        )[0]
         blank_col = log_probs[:, -1].reshape((log_probs.shape[0], 1))
         log_probs = np.concatenate((blank_col, log_probs[:, :-1]), axis=1)
-
 
         all_log_probs.append(log_probs)
         all_segment_file.append(str(segment_file))
@@ -119,15 +124,14 @@ def ctc(model: str,
                 tokenizer,
                 bpe_model,
                 index_duration,
-                window_len
+                window_len,
             )
 
 
-
-
-
-def process_alignment(alignment_file: str, clips_dir: str, offset, max_duration, threshold):
-    """ Cut original audio file into audio segments based on alignment_file
+def process_alignment(
+    alignment_file: str, clips_dir: str, offset, max_duration, threshold
+):
+    """Cut original audio file into audio segments based on alignment_file
 
     Args:
         alignment_file: path to the file with segmented text and corresponding time stamps.
@@ -150,7 +154,13 @@ def process_alignment(alignment_file: str, clips_dir: str, offset, max_duration,
                 audio_file = line[0].strip()
                 continue
             line = line[0].split()
-            segments.append((float(line[0]) + offset / 1000, float(line[1]) + offset / 1000, float(line[2])))
+            segments.append(
+                (
+                    float(line[0]) + offset / 1000,
+                    float(line[1]) + offset / 1000,
+                    float(line[2]),
+                )
+            )
 
     # cut the audio into segments and save the final manifests at output_dir
     sampling_rate, signal = wav.read(audio_file)
@@ -170,7 +180,7 @@ def process_alignment(alignment_file: str, clips_dir: str, offset, max_duration,
                 wav.write(audio_filepath, sampling_rate, segment)
             else:
                 low_score_dur += duration
- 
+
     # keep track of duration of the deleted segments
     del_duration = 0
     begin = 0
@@ -187,11 +197,18 @@ def process_alignment(alignment_file: str, clips_dir: str, offset, max_duration,
     del_duration += duration
 
     print(f"Original duration  : {round(original_dur / 60)}min")
-    print(f"High score segments: {round(high_score_dur / 60)}min ({round(high_score_dur/original_dur*100)}%)")
-    print(f"Low score segments : {round(low_score_dur / 60)}min ({round(low_score_dur/original_dur*100)}%)")
+    print(
+        f"High score segments: {round(high_score_dur / 60)}min ({round(high_score_dur/original_dur*100)}%)"
+    )
+    print(
+        f"Low score segments : {round(low_score_dur / 60)}min ({round(low_score_dur/original_dur*100)}%)"
+    )
 
-def _prepare_tokenized_text_for_bpe_model(text: List[str], tokenizer, vocabulary: List[str], blank_idx: int = 0):
-    """ Creates a transition matrix for BPE-based models"""
+
+def _prepare_tokenized_text_for_bpe_model(
+    text: List[str], tokenizer, vocabulary: List[str], blank_idx: int = 0
+):
+    """Creates a transition matrix for BPE-based models"""
     space_idx = vocabulary.index("▁")
     ground_truth_mat = [[-1, -1]]
     utt_begin_indices = []
@@ -268,7 +285,9 @@ def _compute_time(index, align_type, timings):
         return min(timings[index - 1] + 0.5, middle)
 
 
-def determine_utterance_segments(config, utt_begin_indices, char_probs, timings, text, char_list):
+def determine_utterance_segments(
+    config, utt_begin_indices, char_probs, timings, text, char_list
+):
     """Utterance-wise alignments from char-wise alignments.
     Adapted from https://github.com/lumaku/ctc-segmentation
 
@@ -294,7 +313,10 @@ def determine_utterance_segments(config, utt_begin_indices, char_probs, timings,
         if char_list[start_t_floor] == config.char_list[config.blank]:
             start_blank = None
             j = start_t_floor - 1
-            while char_list[j] == config.char_list[config.blank] and j > start_t_floor - 20:
+            while (
+                char_list[j] == config.char_list[config.blank]
+                and j > start_t_floor - 20
+            ):
                 start_blank = j
                 j -= 1
             if start_blank:
@@ -358,6 +380,7 @@ def write_output(
                     f"{start} {end} {score} | {text[i]} | {text_no_preprocessing[i]} | {text_normalized[i]}\n"
                 )
 
+
 def get_segments(
     log_probs: np.ndarray,
     path_wav: Union[PosixPath, str],
@@ -367,7 +390,7 @@ def get_segments(
     tokenizer: SentencePieceTokenizer,
     bpe_model: bool,
     index_duration: float,
-    window_size: int = 8000
+    window_size: int = 8000,
 ) -> None:
     """
     Segments the audio into segments and saves segments timings to a file
@@ -389,7 +412,9 @@ def get_segments(
         text = [t.strip() for t in text if t.strip()]
 
     # add corresponding original text without pre-processing
-    transcript_file_no_preprocessing = transcript_file.replace(".txt", "_with_punct.txt")
+    transcript_file_no_preprocessing = transcript_file.replace(
+        ".txt", "_with_punct.txt"
+    )
     if not os.path.exists(transcript_file_no_preprocessing):
         raise ValueError(f"{transcript_file_no_preprocessing} not found.")
 
@@ -398,7 +423,9 @@ def get_segments(
         text_no_preprocessing = [t.strip() for t in text_no_preprocessing if t.strip()]
 
     # add corresponding normalized original text
-    transcript_file_normalized = transcript_file.replace(".txt", "_with_punct_normalized.txt")
+    transcript_file_normalized = transcript_file.replace(
+        ".txt", "_with_punct_normalized.txt"
+    )
     if not os.path.exists(transcript_file_normalized):
         raise ValueError(f"{transcript_file_normalized} not found.")
 
@@ -418,7 +445,9 @@ def get_segments(
     config.index_duration = index_duration
 
     if bpe_model:
-        ground_truth_mat, utt_begin_indices = _prepare_tokenized_text_for_bpe_model(text, tokenizer, vocabulary, 0)
+        ground_truth_mat, utt_begin_indices = _prepare_tokenized_text_for_bpe_model(
+            text, tokenizer, vocabulary, 0
+        )
     else:
         config.excluded_characters = ".,-?!:»«;'›‹()"
         config.blank = vocabulary.index(" ")
@@ -434,11 +463,17 @@ def get_segments(
         f"Text length {os.path.basename(transcript_file)}: {len(ground_truth_mat)}"
     )
 
-    timings, char_probs, char_list = cs.ctc_segmentation(config, log_probs, ground_truth_mat)
+    timings, char_probs, char_list = cs.ctc_segmentation(
+        config, log_probs, ground_truth_mat
+    )
     _print(ground_truth_mat, vocabulary)
-    segments = determine_utterance_segments(config, utt_begin_indices, char_probs, timings, text, char_list)
+    segments = determine_utterance_segments(
+        config, utt_begin_indices, char_probs, timings, text, char_list
+    )
 
-    write_output(output_file, path_wav, segments, text, text_no_preprocessing, text_normalized)
+    write_output(
+        output_file, path_wav, segments, text, text_no_preprocessing, text_normalized
+    )
     values = []
     for segment in segments:
         values.append(segment[2])
@@ -450,9 +485,10 @@ def get_segments(
     return statistics.mean(values)
 
 
-
-def process_alignment(alignment_file: str, clips_dir: str, max_duration, threshold, offset=0, padding=0):
-    """ Cut original audio file into audio segments based on alignment_file
+def process_alignment(
+    alignment_file: str, clips_dir: str, max_duration, threshold, offset=0, padding=0
+):
+    """Cut original audio file into audio segments based on alignment_file
     Args:
         alignment_file: path to the file with segmented text and corresponding time stamps.
             The first line of the file contains the path to the original audio file
@@ -474,8 +510,17 @@ def process_alignment(alignment_file: str, clips_dir: str, max_duration, thresho
                 audio_file = line[0].strip()
                 continue
             line = line[0].split()
-            segment = [float(line[0]) + float(offset) + padding, float(line[1]) + float(offset) - padding]
-            segments.append((float(line[0]) + float(offset) + padding, float(line[1]) + float(offset) - padding, float(line[2])))
+            segment = [
+                float(line[0]) + float(offset) + padding,
+                float(line[1]) + float(offset) - padding,
+            ]
+            segments.append(
+                (
+                    float(line[0]) + float(offset) + padding,
+                    float(line[1]) + float(offset) - padding,
+                    float(line[2]),
+                )
+            )
 
     # cut the audio into segments and save the final manifests at output_dir
     sampling_rate, signal = wav.read(audio_file)
@@ -495,7 +540,7 @@ def process_alignment(alignment_file: str, clips_dir: str, max_duration, thresho
                 wav.write(audio_filepath, sampling_rate, segment)
             else:
                 low_score_dur += duration
- 
+
     # keep track of duration of the deleted segments
     del_duration = 0
     begin = 0
@@ -512,11 +557,18 @@ def process_alignment(alignment_file: str, clips_dir: str, max_duration, thresho
     del_duration += duration
 
     print(f"Original duration  : {round(original_dur / 60)}min")
-    print(f"High score segments: {round(high_score_dur / 60)}min ({round(high_score_dur/original_dur*100)}%)")
-    print(f"Low score segments : {round(low_score_dur / 60)}min ({round(low_score_dur/original_dur*100)}%)")
+    print(
+        f"High score segments: {round(high_score_dur / 60)}min ({round(high_score_dur/original_dur*100)}%)"
+    )
+    print(
+        f"Low score segments : {round(low_score_dur / 60)}min ({round(low_score_dur/original_dur*100)}%)"
+    )
 
-def _prepare_tokenized_text_for_bpe_model(text: List[str], tokenizer, vocabulary: List[str], blank_idx: int = 0):
-    """ Creates a transition matrix for BPE-based models"""
+
+def _prepare_tokenized_text_for_bpe_model(
+    text: List[str], tokenizer, vocabulary: List[str], blank_idx: int = 0
+):
+    """Creates a transition matrix for BPE-based models"""
     space_idx = vocabulary.index("▁")
     ground_truth_mat = [[-1, -1]]
     utt_begin_indices = []
@@ -590,7 +642,9 @@ def _compute_time(index, align_type, timings):
         return min(timings[index - 1] + 0.5, middle)
 
 
-def determine_utterance_segments(config, utt_begin_indices, char_probs, timings, text, char_list):
+def determine_utterance_segments(
+    config, utt_begin_indices, char_probs, timings, text, char_list
+):
     """Utterance-wise alignments from char-wise alignments.
     Adapted from https://github.com/lumaku/ctc-segmentation
     Args:
@@ -615,7 +669,10 @@ def determine_utterance_segments(config, utt_begin_indices, char_probs, timings,
         if char_list[start_t_floor] == config.char_list[config.blank]:
             start_blank = None
             j = start_t_floor - 1
-            while char_list[j] == config.char_list[config.blank] and j > start_t_floor - 20:
+            while (
+                char_list[j] == config.char_list[config.blank]
+                and j > start_t_floor - 20
+            ):
                 start_blank = j
                 j -= 1
             if start_blank:

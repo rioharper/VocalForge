@@ -1,10 +1,10 @@
-
 from .audio_utils import get_files
 from .audio_utils import get_timestamps
 from .audio_utils import export_from_timestamps
 import os
 
-class VoiceDetection: 
+
+class VoiceDetection:
     def __init__(self, input_dir=None, output_dir=None, sample_dir=None, hparams=None):
         """
         Initializes a new instance of the VoiceDetection class.
@@ -19,20 +19,21 @@ class VoiceDetection:
         else:
             self.Input_Dir = input_dir
             self.Output_Dir = output_dir
-        self.Input_Files = get_files(self.Input_Dir, True, '.wav')
+        self.Input_Files = get_files(self.Input_Dir, True, ".wav")
         self.Timelines = []
         self.Timestamps = []
         self.Hparams = hparams
         from pyannote.audio import Pipeline
-        self.Pipeline = Pipeline.from_pretrained("pyannote/voice-activity-detection", 
-                                    use_auth_token=True)
-        
+
+        self.Pipeline = Pipeline.from_pretrained(
+            "pyannote/voice-activity-detection", use_auth_token=True
+        )
+
         # instantiate the pipeline with hyperparameters if declared
         self.isHparams = False
         if self.Hparams is not None:
             self.Pipeline.instantiate(self.Hparams)
             self.isHparams = True
-
 
     def analyze_folder(self):
         """
@@ -47,24 +48,22 @@ class VoiceDetection:
         for file in self.Input_Files:
             output = self.Pipeline(file)
             self.Timelines.append(output)
-    
 
     def analyze_file(self, path):
         if self.Hparams is not None and self.isHparams == False:
             self.Pipeline.instantiate(self.Hparams)
             self.isHparams = True
-        '''function to analyze a single file'''
+        """function to analyze a single file"""
         return self.Pipeline(path)
-    
 
     def find_timestamps(self):
         """
         This function processes speech metrics and returns timestamps
         of speech segments in the audio.
-        
+
         Parameters:
         speech_metrics (list): list of speech metrics for audio file(s)
-        
+
         Returns:
         Timestamps (list): list of speech timestamps for each audio file
         """
@@ -72,7 +71,6 @@ class VoiceDetection:
         for fileindex in range(len(self.Input_Files)):
             timestamps = get_timestamps(self.Timelines[fileindex])
             self.Timestamps.append(timestamps)
-
 
     def update_timeline(self, new_timeline, index: int):
         """
@@ -82,17 +80,19 @@ class VoiceDetection:
 
         self.Timestamps[index] = get_timestamps(new_timeline)
 
-
-
     def export(self):
         """
-        Given a list of timestamps for each file, the function exports 
-        the speech segments from each raw file to a new file format wav. 
-        The new files are saved to a specified directory. 
+        Given a list of timestamps for each file, the function exports
+        the speech segments from each raw file to a new file format wav.
+        The new files are saved to a specified directory.
         """
         for index, file in enumerate(self.Input_Files):
-            base_file_name = file.split('/')[-1]
-            export_from_timestamps(file, os.path.join(self.Output_Dir, base_file_name), self.Timestamps[index])
+            base_file_name = file.split("/")[-1]
+            export_from_timestamps(
+                file,
+                os.path.join(self.Output_Dir, base_file_name),
+                self.Timestamps[index],
+            )
 
     def run(self):
         """runs the voice detection pipeline"""

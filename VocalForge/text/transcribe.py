@@ -1,7 +1,9 @@
 from .text_utils import get_files
 import os
 from whisper import load_model
-class Transcribe():
+
+
+class Transcribe:
     """
     A class for transcribing audio files and writing the transcriptions to text files.
 
@@ -31,7 +33,9 @@ class Transcribe():
             Transcribes all audio files in the `Input_Dir` folder.
     """
 
-    def __init__(self, input_dir, output_dir, model="large", prompt=None, do_write=True):
+    def __init__(
+        self, input_dir, output_dir, model="large", prompt=None, do_write=True
+    ):
         """
         Initializes the Transcribe class.
 
@@ -57,13 +61,13 @@ class Transcribe():
             do_write (bool, optional): Whether to write the transcriptions to text files. Defaults to True.
         """
         for file in get_files(self.Input_Dir):
-            text_file_dir = os.path.join(self.Output_Dir, file.split(".")[0]+".txt")
+            text_file_dir = os.path.join(self.Output_Dir, file.split(".")[0] + ".txt")
             # check if the text file already exists
             if not os.path.exists(text_file_dir):
                 # transcribe the audio file
                 aud_file_dir = os.path.join(self.Input_Dir, file)
                 result = self.Model.transcribe(aud_file_dir, initial_prompt=self.Prompt)
-                self.Texts.append(result['text'].strip())
+                self.Texts.append(result["text"].strip())
                 if self.Do_Write:
                     self.write_transcription(result, text_file_dir)
 
@@ -75,8 +79,8 @@ class Transcribe():
             result (dict): The transcription result.
             text_file_dir (str): The directory to write the transcription to.
         """
-        with open(text_file_dir, 'w', encoding="utf-8") as f:
-            f.write(result['text'].strip())
+        with open(text_file_dir, "w", encoding="utf-8") as f:
+            f.write(result["text"].strip())
 
     def run(self):
         """

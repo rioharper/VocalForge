@@ -3,56 +3,69 @@ import os
 import yt_dlp
 import natsort
 from typing import List, Tuple
-def download_videos(url: str, out_dir: str):
-    '''This function downloads audio from a youtube playlist and saves it to disk in the .wav format. 
-       If the audio is longer than 1 hour, it is split into smaller clips and saved to disk. 
 
-        Inputs:
-        - url: a string representing the url of the youtube playlist or youtube video.
-        - out_dir: a string representing the directory path to save the downloaded audio.
-        
-        Outputs:
-        - None, but audio clips are saved to disk in the .wav format.
-    '''
+
+def download_videos(url: str, out_dir: str):
+    """This function downloads audio from a youtube playlist and saves it to disk in the .wav format.
+    If the audio is longer than 1 hour, it is split into smaller clips and saved to disk.
+
+     Inputs:
+     - url: a string representing the url of the youtube playlist or youtube video.
+     - out_dir: a string representing the directory path to save the downloaded audio.
+
+     Outputs:
+     - None, but audio clips are saved to disk in the .wav format.
+    """
 
     ydl_opts = {
-        'format': 'wav/bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
-        }],
-        'outtmpl': os.path.join(out_dir, '%(title)s.%(ext)s'),
+        "format": "wav/bestaudio/best",
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "wav",
+            }
+        ],
+        "outtmpl": os.path.join(out_dir, "%(title)s.%(ext)s"),
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         error_code = ydl.download(url)
 
-    #5 second blank as pyannote doesnt seem to process first ~3 seconds of audio
+    # 5 second blank as pyannote doesnt seem to process first ~3 seconds of audio
     blank = AudioSegment.silent(duration=5000)
-    
-    #split if audio is above 1 hour
+
+    # split if audio is above 1 hour
     for filename in os.listdir(out_dir):
         file = AudioSegment.from_file(os.path.join(out_dir, filename))
         if len(file) > 3500000:
             slices = file[::3500000]
             for index, slice in enumerate(slices):
-                slice.export(os.path.join(out_dir, f'{os.path.splitext(filename)[0]}_{index}.wav'), format='wav')
+                slice.export(
+                    os.path.join(
+                        out_dir, f"{os.path.splitext(filename)[0]}_{index}.wav"
+                    ),
+                    format="wav",
+                )
             os.remove(os.path.join(out_dir, filename))
-        #add 5 second blank at start
-
+        # add 5 second blank at start
 
     for filename in os.listdir(out_dir):
         file_stat = os.stat(os.path.join(out_dir, filename))
         file = AudioSegment.from_file(os.path.join(out_dir, filename))
         if file_stat.st_size > 500000000:
-            slices = file[::int((file.duration_seconds*1000)/2)]
+            slices = file[:: int((file.duration_seconds * 1000) / 2)]
             for index, slice in enumerate(slices):
                 slice = blank + slice
-                slice.export(os.path.join(out_dir, f'{os.path.splitext(filename)[0]}_{index}.wav'), format='wav')
+                slice.export(
+                    os.path.join(
+                        out_dir, f"{os.path.splitext(filename)[0]}_{index}.wav"
+                    ),
+                    format="wav",
+                )
             os.remove(os.path.join(out_dir, filename))
         else:
             file = blank + file
-            file.export(os.path.join(out_dir, filename), format='wav')
+            file.export(os.path.join(out_dir, filename), format="wav")
 
     for count, filename in enumerate(os.listdir(out_dir)):
         dst = f"DATA{count}.wav"
@@ -62,26 +75,29 @@ def download_videos(url: str, out_dir: str):
 
 
 def split_files(folder: str, dir: str, duration: int):
-    '''This function splits audio files in the .wav format located in the
-       specified folder and saves the clips in the same folder. 
+    """This function splits audio files in the .wav format located in the
+    specified folder and saves the clips in the same folder.
 
-        Inputs:
-        - folder: a string representing the name of the folder containing the audio files.
-        - dir: a string representing the directory path containing the folder.
-        - duration: ms of the duration of sample clips.
-        
-        Outputs:
-        - None, but audio clips are saved to disk in the .wav format.
-        
-    '''
+     Inputs:
+     - folder: a string representing the name of the folder containing the audio files.
+     - dir: a string representing the directory path containing the folder.
+     - duration: ms of the duration of sample clips.
+
+     Outputs:
+     - None, but audio clips are saved to disk in the .wav format.
+
+    """
 
     folder_dir = os.path.join(dir, folder)
     for file in get_files(folder_dir, ext=".wav"):
         file_dir = os.path.join(folder_dir, file)
         raw = AudioSegment.from_file(file_dir, format="wav")
         for index, clip in enumerate(raw[::duration]):
-            clip_dir = os.path.join(folder_dir, file.split(".")[0], f"{file.split('.')[0]}_{index}.wav")
+            clip_dir = os.path.join(
+                folder_dir, file.split(".")[0], f"{file.split('.')[0]}_{index}.wav"
+            )
             clip.export(clip_dir, format="wav")
+
 
 def get_files(dir: str, full_dir: bool = False, ext: str = None) -> list:
     """
@@ -135,8 +151,8 @@ def create_core_folders(folders: list, workdir: str):
             os.makedirs(folderdir)
 
 
-def create_samples(length:int, input_dir:str, output_dir:str) -> None:
-    '''This function creates audio samples of a specified length from audio files
+def create_samples(length: int, input_dir: str, output_dir: str) -> None:
+    """This function creates audio samples of a specified length from audio files
        in the .wav format located in a specified raw directory.
 
     Parameters:
@@ -152,28 +168,28 @@ def create_samples(length:int, input_dir:str, output_dir:str) -> None:
         Creates audio samples of 5 seconds from audio files in the .wav format located in the
         '/home/user/documents/raw' directory and saves them to the '/home/user/documents/samples'
         directory.
-    '''
+    """
 
     rawfiles = get_files(input_dir, ".wav")
 
     for file in rawfiles:
         raw_data = AudioSegment.from_file(os.path.join(input_dir, file), format="wav")
-        entry = raw_data[:length * 1000]
+        entry = raw_data[: length * 1000]
         nfilename = os.path.join(output_dir, file)
         entry.export(nfilename, format="wav")
 
 
-#function with timeline being a pyannote.core.annotation.Annotation object
+# function with timeline being a pyannote.core.annotation.Annotation object
 def get_timestamps(timeline) -> List[Tuple[int, int]]:
-    '''This function takes in a pyannote.core.annotation.Annotation object and returns a list of timestamps
-       where each timestamp is a tuple containing the start and end time of a period.
+    """This function takes in a pyannote.core.annotation.Annotation object and returns a list of timestamps
+    where each timestamp is a tuple containing the start and end time of a period.
 
-        Inputs:
-        - timeline: a pyannote.core.annotation.Annotation object.
+     Inputs:
+     - timeline: a pyannote.core.annotation.Annotation object.
 
-        Outputs:
-        - A list of timestamps where each timestamp is a tuple containing the start and end time of a period.
-    '''
+     Outputs:
+     - A list of timestamps where each timestamp is a tuple containing the start and end time of a period.
+    """
 
     timestamps = []
     for segment in timeline.get_timeline():
@@ -181,7 +197,9 @@ def get_timestamps(timeline) -> List[Tuple[int, int]]:
     return timestamps
 
 
-def remove_short_timestamps(timestamps: List[Tuple[int, int]], min_duration: int) -> List[Tuple[int, int]]:
+def remove_short_timestamps(
+    timestamps: List[Tuple[int, int]], min_duration: int
+) -> List[Tuple[int, int]]:
     """
     Removes timestamps that are too short from a list of timestamps.
 
@@ -196,19 +214,21 @@ def remove_short_timestamps(timestamps: List[Tuple[int, int]], min_duration: int
     return [(start, end) for start, end in timestamps if end - start > min_duration]
 
 
-def concentrate_timestamps(timestamps: List[Tuple[int, int]], min_duration: int) -> List[Tuple[int, int]]:
-    '''This function takes in a list of timestamps and returns a condensed list of
-       timestamps where timestamps are merged that are close to each other.
+def concentrate_timestamps(
+    timestamps: List[Tuple[int, int]], min_duration: int
+) -> List[Tuple[int, int]]:
+    """This function takes in a list of timestamps and returns a condensed list of
+    timestamps where timestamps are merged that are close to each other.
 
-        Inputs:
-        - timestamps: a list of timestamp tuples or a list of single timestamps.
-        - min_duration: an integer representing the minimum duration between timestamps
-          to be combined.
-        
-        Outputs:
-        - A list of condensed timestamps where timestamps that are within
-          {min_duration} of each other have been merged into a single entry.
-    '''
+     Inputs:
+     - timestamps: a list of timestamp tuples or a list of single timestamps.
+     - min_duration: an integer representing the minimum duration between timestamps
+       to be combined.
+
+     Outputs:
+     - A list of condensed timestamps where timestamps that are within
+       {min_duration} of each other have been merged into a single entry.
+    """
 
     concatenated_timestamps = []
     current_start = timestamps[0][0]
@@ -223,48 +243,59 @@ def concentrate_timestamps(timestamps: List[Tuple[int, int]], min_duration: int)
     concatenated_timestamps.append([current_start, current_stop])
     return concatenated_timestamps
 
+
 def calculate_duration(timestamps: List[Tuple[int, int]]) -> float:
-    '''pretty self expainatory'''
+    """pretty self expainatory"""
     duration = 0
     for timestamp in timestamps:
         duration += timestamp[1] - timestamp[0]
     return duration
 
+
 def find_original_duration(input_file_dir: str) -> float:
-    '''pretty self expainatory'''
+    """pretty self expainatory"""
     raw = AudioSegment.from_file(input_file_dir, format="wav")
     return raw.duration_seconds
 
-def find_duration_diff(new_timestamps: List[Tuple[int, int]], original_duration: float) -> float:
-    '''pretty self expainatory'''
+
+def find_duration_diff(
+    new_timestamps: List[Tuple[int, int]], original_duration: float
+) -> float:
+    """pretty self expainatory"""
     new_duration = calculate_duration(new_timestamps)
     # if abs(original_duration - new_duration) > original_duration * 0.8:
     #     return abs(new_duration - original_duration)
     return abs(original_duration - new_duration)
 
 
-def export_from_timestamps(input_file_dir, export_file_dir, timestamps: List[Tuple[int, int]], combine_mode: str = 'timestamps') -> None:
-    ''''Exports audio from timestamps to a new file.
-    
-        Inputs:
-        - input_file_dir: a string representing the directory path of the input audio file.
-        - export_file_dir: a string representing the directory path to save the exported audio file.
-        - timestamps: a list of timestamp tuples or a list of single timestamps. **NOTE: timestamps must be in seconds**
-        - combine_mode: a string representing the mode of combination. Valid values are 'timestamps' (default) and 'time_between'.'''
-    
+def export_from_timestamps(
+    input_file_dir,
+    export_file_dir,
+    timestamps: List[Tuple[int, int]],
+    combine_mode: str = "timestamps",
+) -> None:
+    """'Exports audio from timestamps to a new file.
+
+    Inputs:
+    - input_file_dir: a string representing the directory path of the input audio file.
+    - export_file_dir: a string representing the directory path to save the exported audio file.
+    - timestamps: a list of timestamp tuples or a list of single timestamps. **NOTE: timestamps must be in seconds**
+    - combine_mode: a string representing the mode of combination. Valid values are 'timestamps' (default) and 'time_between'.
+    """
+
     new_file = AudioSegment.empty()
     raw = AudioSegment.from_file(input_file_dir, format="wav")
-    if combine_mode == 'timestamps':
+    if combine_mode == "timestamps":
         if len(timestamps) == 0:
             return
         for timestamp in timestamps:
-            new_file += raw[timestamp[0]*1000:timestamp[1]*1000]
-    elif combine_mode == 'time_between':
+            new_file += raw[timestamp[0] * 1000 : timestamp[1] * 1000]
+    elif combine_mode == "time_between":
         if len(timestamps) == 0:
             raw.export(export_file_dir, format="wav")
-        for i in range(len(timestamps)-1):
-            new_file += raw[timestamps[i][1]*1000:timestamps[i+1][0]*1000]
+        for i in range(len(timestamps) - 1):
+            new_file += raw[timestamps[i][1] * 1000 : timestamps[i + 1][0] * 1000]
     if len(new_file) > 1000:
         new_file.export(export_file_dir, format="wav")
-    elif combine_mode == 'timestamps':
+    elif combine_mode == "timestamps":
         print(f"{input_file_dir} doesn't have enough clean audio to export")

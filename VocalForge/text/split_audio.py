@@ -2,7 +2,8 @@ from .ctc_utils import process_alignment
 import os
 from .text_utils import get_files
 
-class SplitAudio():
+
+class SplitAudio:
     """
     This function splits the audio into clips using the timestamps in the
     segmented audio folder.
@@ -15,17 +16,25 @@ class SplitAudio():
     5. max_duration (int): Max duration of the clips in seconds.
     6. threshold (float): Confidence threshold for the timing of the clips. The closer to 0, the more selective the clips will be. (cannot be > 0)
     """
-    def __init__(self, input_dir, output_dir, offsets=[0], paddings=[0], max_duration=40, threshold=2.5):
+
+    def __init__(
+        self,
+        input_dir,
+        output_dir,
+        offsets=[0],
+        paddings=[0],
+        max_duration=40,
+        threshold=2.5,
+    ):
         self.Input_Dir = input_dir
         self.Output_Dir = output_dir
         self.Offset = offsets
         self.Padding = paddings
         self.Max_Duration = max_duration
         self.Threshold = -threshold
-        
 
     def run(self):
-        for index, file in enumerate(get_files(self.Input_Dir, '.txt')):
+        for index, file in enumerate(get_files(self.Input_Dir, ".txt")):
             try:
                 offset = self.Offset[index]
             except:
@@ -34,14 +43,16 @@ class SplitAudio():
                 padding = self.Padding[index]
             except:
                 padding = self.Padding[0]
-            clips_folder_dir = os.path.join(self.Output_Dir, file.split('_segmented')[0])
+            clips_folder_dir = os.path.join(
+                self.Output_Dir, file.split("_segmented")[0]
+            )
             os.mkdir(clips_folder_dir)
             file_dir = os.path.join(self.Input_Dir, file)
             process_alignment(
                 alignment_file=file_dir,
                 clips_dir=clips_folder_dir,
-                offset = offset,
-                padding = padding,
-                max_duration = self.Max_Duration, 
-                threshold = self.Threshold
+                offset=offset,
+                padding=padding,
+                max_duration=self.Max_Duration,
+                threshold=self.Threshold,
             )
