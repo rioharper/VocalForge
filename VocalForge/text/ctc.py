@@ -1,14 +1,14 @@
-import os
 from torch import cuda
 import numpy as np
 import nemo.collections.asr as nemo_asr
 import scipy.io.wavfile as wav
 from .ctc_utils import get_segments
 
+
 def split_on_newline(dir):
-    text = ''
+    text = ""
     text_list = []
-    with open(dir, 'r', encoding='utf-8') as f:
+    with open(dir, "r", encoding="utf-8") as f:
         text = f.read()
     text = text.splitlines()
     for index, line in enumerate(text):
@@ -46,7 +46,7 @@ def ctc(model, aud_path: str, out_file: str, window_size: int):
     sample_rate, signal = wav.read(aud_path)
 
     # Path to the raw transcript file
-    raw_path = aud_path.replace('.wav', '.txt')
+    raw_path = aud_path.replace(".wav", ".txt")
 
     # Get the vocabulary used by the model
     vocabulary = ["ε"] + list(model.cfg.decoder.vocabulary)
@@ -66,7 +66,7 @@ def ctc(model, aud_path: str, out_file: str, window_size: int):
     cuda.empty_cache()
 
     # Get the recognized text segments
-    
+
     return get_segments(
         log_probs,
         aud_path,
