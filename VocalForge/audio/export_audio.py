@@ -50,14 +50,11 @@ class ExportAudio:
         """
         Normalize all audio files in the export directory and export them to the normalization directory.
         """
-        for file in get_files(self.Export_Dir):
-            file_dir = self.Export_Dir / file
+        for file in get_files(self.Export_Dir, full_dir=True):
+            file_dir = Path(file)
             audio = AudioSegment.from_file(file_dir, format="wav")
             normalized = normalize(audio)
-            normalized.export(
-                self.Normalization_Dir / file.name,
-                format="wav",
-            )
+            normalized.export(self.Normalization_Dir / file_dir.name, format="wav")
 
     def noise_remove(self) -> None:
         """
