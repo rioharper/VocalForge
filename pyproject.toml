@@ -31,7 +31,8 @@ dependencies = [
     'pandas==1.4.3',
     'regex==2022.10.31',
     'scipy==1.10.1',
-    'tqdm==4.64.1'
+    'tqdm==4.64.1',
+    'hydra-core'
 ]
 
 [tool.setuptools]
@@ -40,16 +41,12 @@ package-dir = {"" = "VocalForge"}
 [project.optional-dependencies]
 audio = [
         'deepfilternet',
-        'pyannote.core',
-        'pyannote.audio',
-        'yt_dlp',
+        'yt_dlp'
         ]
 
 text = [
         'ctc_segmentation',
-        'nemo==4.5.5',
-        'nemo_text_processing',
-        'nemo_toolkit',
+        'nemo_toolkit[all]==1.18.1',
         'num2words==0.5.12',
         'openai_whisper',
         'whisper',

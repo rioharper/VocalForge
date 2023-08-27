@@ -1,0 +1,38 @@
+{
+  "name": "vcauditor",
+  "version": "1.0.0",
+  "description": "a GUI library to verify the transcription timings created by VocalForge",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rioharper/VocalForge.git"
+  },
+  "keywords": [
+    "waveform",
+    "editor",
+    "ai",
+    "voice",
+    "tts"
+  ],
+  "author": "Rio Harper",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rioharper/VocalForge/issues"
+  },
+  "homepage": "https://github.com/rioharper/VocalForge#readme",
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.4.2",
+    "@types/mathjs": "^9.4.2",
+    "express": "^4.18.2",
+    "mathjs": "^11.9.1",
+    "patch-package": "^8.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "wavesurfer.js": "https://github.com/rioharper/wavesurfer.js/tarball/main",
+    "webpack-dev-server": "^4.15.1",
+    "yarn": "^1.22.19"
+  }
+}

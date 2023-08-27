@@ -1,0 +1,280 @@
+/* Common styles */
+body {
+  margin: 0;
+  font-family: Helvetica, Arial, sans-serif;
+  background-color: #001427;
+}
+
+#popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border: 1px solid black;
+  padding: 20px;
+  z-index: 9999;
+}
+
+/* Positioning */
+#audioFolder,
+#textFolder,
+#setFoldersButton {
+  position: fixed;
+  left: 0;
+  padding: 10px;
+}
+
+#audioFolder {
+  top: 15px;
+  padding-left: 25px;
+  width: 300px;
+  left: 15px;
+}
+
+#textFolder {
+  top: 15px;
+  width: 300px;
+  left: 365px;
+}
+
+#setFoldersButton {
+  top: 15px;
+  width: auto;
+  left: 700px;
+}
+
+/* Main Container */
+#container {
+  display: flex;
+  height: 100%
+}
+
+/* Tables */
+#tables {
+  height: 50vh;
+  width: auto; /* Set initial width to 100% */
+  position: fixed;
+  overflow-y: hidden;
+  top: 35vh;
+  left: 2%;
+  transform: translateY(-45%) scaleX(0); /* Initially scaled to 0 width */
+  transform-origin: left center; /* Transform origin set to the left side */
+  z-index: 2;
+  box-sizing: border-box;
+  padding: 20px;
+  padding-bottom: 20px;
+  border-radius: 20px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  background-color: rgba(55, 6, 23, 0.6);
+  transition: transform 0.5s ease; /* Apply a smooth transform transition */
+}
+
+/* Add a class to indicate when content is populated */
+#tables.populated {
+  transform: translateY(-45%) scaleX(1); /* Scale back to full width */
+}
+
+animate{
+  animation : slideIn 0.5s ease-in-out;
+}
+
+/* Table cells */
+td {
+  display: block;
+}
+
+/* Table content styling */
+div[class^="table-div"] > table:nth-child(2) > tbody:nth-child(1),
+div[class^="table-div"] > table > tbody > tr > td:nth-child(2),
+div[class^="table-div"] > table > tbody > tr > td:nth-child(3),
+div[class^="table-div"] > table > tbody > tr > td:nth-child(4),
+div[class^="table-div"] > table > tbody > tr > td:nth-child(5) {
+  font-size: 16px;
+  color: #fff;
+  display: inline-block;
+  font-weight: bold;
+  margin-bottom: 15px;
+  padding: 5px;
+}
+
+
+
+div[class^="table-div"] > table > tbody > tr > td:first-child {
+  font-size: 24px;
+  right: 20px
+}
+
+/* Table buttons */
+
+div[class^="table-div"] div.sortingButtons select{
+  position:sticky;
+  top: 0;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 10px;
+  color: #001427;
+  font-size: 14px;
+  font-weight: bold;
+  margin: 5px; /* Adjust the margin as needed */
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;  
+}
+
+div[class^="table-div"] div.sortingButtons{
+  position: sticky;
+  top: 40px;
+  background-color: rgba(55, 6, 23, 0.95);
+  z-index: 1;
+}
+
+div[class^="table-div"] div.buttons {
+  position: sticky;
+  top: 0;
+  background-color: rgba(55, 6, 23, 0.95);
+  z-index: 1;
+}
+
+div[class^="table-div"] div.buttons button:hover {
+  background-color: #ff6347; /* Adjust the color for the hover state */
+}
+
+div[class^="table-div"] div.buttons button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 10px;
+  color: #001427;
+  font-size: 14px;
+  font-weight: bold;
+  margin: 5px; /* Adjust the margin as needed */
+  cursor: pointer;
+  transition: background-color 0.5s ease-in-out;  
+}
+
+/* Style for buttons in the first row */
+div[class^="table-div"] div.buttons-div .sortingButtons {
+  grid-row: 1; /* Place in the first row */
+}
+
+/* Style for buttons in the second row */
+div[class^="table-div"] div.buttons-div .buttons {
+  grid-row: 2; /* Place in the second row */
+}
+
+/* Content section */
+#content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+/* Tabs */
+
+#tabs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: 78vh; /* Changed */
+  left: 18vh; /* Changed */
+  padding: 20px;
+  padding-bottom: 30px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+
+.tab {
+  margin-right: 20px;
+  padding: 10px 20px;
+  background-color: #fff;
+  color: #001427;
+  border: none;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+}
+
+
+.tab:hover,
+.tab.active {
+  background-color: #001427;
+  color: #fff;
+}
+
+/* Waveforms */
+#waveforms {
+  background-color: #353535;
+  height: 60%;
+  /* set width to viewport */
+  width: 100vw;
+  z-index: 0;
+  position: relative;
+  top: 80%;
+  transform: translateY(-60%);
+  background-color: #001427;
+}
+
+
+#waveforms ::part(checked) {
+  background-color: rgba(154,205,50,0.4) !important;
+  animation: grow 2s ease-in-out;
+}
+
+#waveforms ::part(region){
+  border-radius: 40px;
+  height: 80%;
+  transform: translateY(10%);
+}
+
+#waveforms ::part(active) {
+  border-left: #001427 1px solid !important;
+  transform: translateY(0) !important;
+  height: 100% !important;
+  transition: height 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+
+
+#waveforms ::part(removed) {
+  opacity: 0;
+  will-change: opacity;
+}
+
+#waveforms div.waveform input {
+  position: inherit;
+  left: 200px;
+}
+
+#waveforms ::part(::-webkit-scrollbar){
+  width: 10px;
+  background-color: #001427;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(0) scaleY(1.4); /* Adjust the bounce height and scale factor */
+  }
+}
+
+.loading-bar {
+  width: 10px;
+  background-color: #fff;
+  position: absolute;
+  bottom: -100px;
+  animation: bounce 0.8s infinite;
+}
+
+/* Table container height */
+[class^="table-div"] {
+  max-height: 1000px;
+  overflow-y: auto;
+}

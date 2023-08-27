@@ -5,8 +5,8 @@ natsort==8.2.0
 nemo==4.5.5
 nemo_text_processing
 nemo_toolkit
-num2words==0.5.12
-numpy==1.23.2
+num2words
+numpy
 openai_whisper==20230314
 pandas==1.4.3
 pyannote.core
@@ -17,4 +17,4 @@ scipy==1.10.1
 torch==1.11.0
 tqdm==4.64.1
 whisper==1.1.10
-yt_dlp==2023.3.4
+yt_dlp
