@@ -1,44 +1,30 @@
 # An End-to-End Toolkit for Voice Datasets
 
-  
-
 `VocalForge` is an open-source toolkit written in Python 🐍 that is meant to cut down the time to create datasets for, TTS models, hotword detection models, and more so you can spend more time training, and less time sifting through audio data.
-
-  
 
 Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github.com/pyannote/pyannote-audio), [CTC segmentation](https://github.com/lumaku/ctc-segmentation) , [OpenAI's Whisper](https://github.com/openai/whisper), this repo will take you from raw audio to a fully formatted dataset, refining both the audio and text automatically.
 
   
 
-*NOTE: While this does reduce time on spent on dataset curation, verifying the output at each step is important as it isn't perfect*
+_NOTE: While this does reduce time on spent on dataset curation, verifying the output at each step is important as it isn't perfect_
 
   
 
 *this is a very much an experimental release, so bugs and updates will be frequent*
 
-  
-
 ![a flow chart of how this repo works](https://github.com/rioharper/VocalForge/blob/main/media/join_processes.svg?raw=true)
 
-  
-  
 
 ## Features:
 
   
 
 #### `audio_demo.ipynb`
-
-- ⬇️ **Download audio** from a YouTube playlist (perfect for podcasts/interviews) OR input your own raw audio files (wav format)
-
+- ⬇️ **Download audio**  from a YouTube playlist (perfect for podcasts/interviews) OR input your own raw audio files (wav format)
 - 🎵 **Remove Non Speech Data**
-
-- 🗣🗣 **Remove Overlapping Speech**
-
-- 👥 **Split Audio File Into Speakers**
-
-- 👤 **Isolate the same speaker across multiple files (voice verification)**
-
+- 🗣🗣 **Remove Overlapping Speech** 
+- 👥 **Split Audio File Into Speakers** 
+- 👤 **Isolate the same speaker across multiple files (voice verification)** 
 - 🧽 **Use DeepFilterNet to reduce background noise**
 
 - 🧮 **Normalize Audio**
@@ -56,21 +42,7 @@ Using [Nvidia's NEMO](https://github.com/NVIDIA/NeMo), [PyAnnote](https://github
 - 🫶 **Use CTC segmentation to line up text to audio**
 
 - 🖖 **Split audio based on quality of CTC segmentation confidence**
-
-- ✅ **Generate a metadata.csv and dataset in the format of LJSpeech**
-
-
-#### `VCAuditor`
-
-- 📊 **View the waveforms of your audio using a custom version of [WaveSurfer.js](https://wavesurfer-js.org/)**
-
-- 📋**Verify the text created with Whisper Transcription**
-
-- ✍️ **Edit and verify VocalForge generated timestamps to align with the audio**
-
-- 🔃 **Sort by confidence to delete or modify the least confident alignments**
-
-![[Pasted image 20230825234903.png]]
+- ✅ **Generate a metadata.csv and dataset in the format of LJSpeech** 
 
 
 ## Setup/Requirements
@@ -117,8 +89,6 @@ huggingface-cli login
 
 ```
 
-  
-  
 
 Pyannote models need to be "signed up for" in Hugging Face for research purposes. Don't worry, all it asks for is your purpose, website and organization. The following models will have to be manually visited and given the appropriate info:
 
@@ -156,9 +126,7 @@ Some helpful tips for you as you comb through your data:
 Once you are ready to export a verified segment file, then press the export button on the table, and a file will download. This file does not include the multiple normalization text versions that the original file had. If you want to add them back, use the `renormalize.py --[file_name]` to regenerate the missing text.
 
 ## API Example
-
-```python
-
+```
 from VocalForge.text.normalize_text import NormalizeText
 
   
@@ -182,17 +150,12 @@ normalize.run()
   
 
 ## TODO
-
 - [X] Refactor functions for API and toolkit support
-
 - [X] "Sync" datasets with the metadata file if audio clips are deleted after being generated
-
 - [ ] Add a step in the audio refinement processs to remove emotional speech (in progresss)
 
 - [ ] Create a model to remove non-speech utterences and portions with background music (in progresss)
-
 - [X] Update code documentation
-
 - [ ] Add other normalization methods for audio
 
 - [ ] Add other dataset formats for generation

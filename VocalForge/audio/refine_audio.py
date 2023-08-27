@@ -3,7 +3,8 @@ from .overlap import Overlap
 from .isolate import Isolate
 from .export_audio import ExportAudio
 
-class RefineAudio():
+
+class RefineAudio:
     def __init__(
         self,
         input_dir=None,
@@ -37,7 +38,7 @@ class RefineAudio():
         self.Sample_Rate = sample_rate
 
         self.VoiceDetection = VoiceDetection(
-            vad_threshold=self.VAD_Threshold, 
+            vad_threshold=self.VAD_Threshold,
             snr_change=self.SNR_Change,
             input_dir=self.Input_Dir,
             output_dir=self.VAD_dir,
@@ -61,7 +62,7 @@ class RefineAudio():
             normalization_dir=self.Normalized_Dir,
             sample_rate=self.Sample_Rate,
         )
-    
+
     def run_all(self):
         self.VoiceDetection.run_vad()
         self.Overlap_Remover.run_overlap()
