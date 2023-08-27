@@ -293,7 +293,7 @@ class TableGenerator {
     const rows = Array.from(this.table.querySelectorAll("tbody tr"));
     rows.forEach((row, index) => {
       const cells = Array.from(row.querySelectorAll("td"));
-      const text1 = this.createTextOne(cells[0].querySelector("textarea").value);
+      const text1 = cells[0].querySelector("textarea").value;
       const start = cells[1].textContent.replace("Start: ", "");
       const end = cells[2].textContent.replace("End: ", "");
       const confidence = cells[4].textContent === "verified" ? -0.0 : cells[3].textContent.replace("Confidence: ", "");
